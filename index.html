@@ -1,470 +1,600 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Kolkata Chronicle — Fixed</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --primary: #DC143C;
-            --text-dark: #242424;
-            --text-medium: #6B6B6B;
-            --text-light: #8B8B8B;
-            --border: #E6E6E6;
-            --bg-white: #FFFFFF;
-            --bg-light: #FAFAFA;
-            --hover: #F5F5F5;
-        }
-
-        body { font-family: 'Inter', -apple-system, sans-serif; color: var(--text-dark); background: var(--bg-white); line-height: 1.6; }
-
-        /* Header */
-        .header { border-bottom: 1px solid var(--border); padding: 20px 0; background: var(--bg-white); position: sticky; top: 0; z-index: 100; }
-        .header-content { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-family: 'Playfair Display', serif; font-size: 2em; font-weight: 700; color: var(--primary); text-decoration: none; }
-        .header-actions { display: flex; align-items: center; gap: 30px; }
-        .header-actions a { color: var(--text-dark); text-decoration: none; font-size: 0.95em; font-weight: 500; }
-        .btn-subscribe { background: var(--primary); color: white; padding: 10px 24px; border-radius: 24px; font-weight: 600; transition: all 0.2s; }
-        .btn-subscribe:hover { background: #B01030; }
-
-        /* Navigation Tabs */
-        .nav-tabs { border-bottom: 1px solid var(--border); background: var(--bg-white); position: sticky; top: 77px; z-index: 99; }
-        .nav-tabs-content { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: flex; gap: 40px; }
-        .nav-tab { padding: 16px 0; color: var(--text-medium); text-decoration: none; font-size: 0.95em; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
-        .nav-tab:hover { color: var(--text-dark); }
-        .nav-tab.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
-
-        /* Main Container */
-        .container { max-width: 1400px; margin: 0 auto; padding: 60px 40px; }
-
-        /* Brief Card */
-        .brief-card { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 12px; padding: 60px; margin-bottom: 80px; color: white; position: relative; overflow: hidden; }
-        .brief-card::before { content: '☕'; position: absolute; font-size: 20em; opacity: 0.05; right: -40px; top: -60px; }
-        .brief-time { font-size: 0.9em; opacity: 0.7; margin-bottom: 12px; }
-        .brief-title { font-family: 'Playfair Display', serif; font-size: 3.5em; font-weight: 700; margin-bottom: 20px; line-height: 1.1; }
-        .brief-subtitle { font-size: 1.3em; opacity: 0.9; margin-bottom: 40px; max-width: 700px; line-height: 1.5; }
-        .brief-actions { display: flex; gap: 16px; }
-        .btn-brief { padding: 14px 28px; border-radius: 28px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; transition: all 0.2s; font-size: 0.95em; }
-        .btn-read { background: white; color: var(--text-dark); }
-        .btn-read:hover { background: #f0f0f0; }
-        .btn-listen { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); }
-        .btn-listen:hover { background: rgba(255,255,255,0.2); }
-
-        /* Story Grid - 2x2 */
-        .story-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 60px 80px; margin-bottom: 100px; }
-        .story-card { cursor: pointer; transition: transform 0.2s; height: max-content; align-self: start; }
-        .story-card:hover { transform: translateY(-2px); }
-        .story-image { width: 100%; height: 360px; object-fit: cover; border-radius: 8px; margin-bottom: 24px; display: block; }
-        .story-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.85em; color: var(--text-medium); }
-        .author-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-        .author-name { font-weight: 500; color: var(--text-dark); }
-        .story-title { font-family: 'Playfair Display', serif; font-size: 2em; font-weight: 700; line-height: 1.2; margin-bottom: 16px; color: var(--text-dark); }
-        .story-summary { font-size: 1.05em; line-height: 1.6; color: var(--text-medium); margin-bottom: 20px; }
-        .story-actions { display: flex; align-items: center; gap: 24px; font-size: 0.9em; color: var(--text-medium); }
-        .story-action { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: color 0.2s; }
-        .story-action:hover { color: var(--text-dark); }
-        .icon-btn { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
-
-        /* Placeholder makes grid even (2 columns per row) */
-        .story-card.placeholder { visibility: hidden; pointer-events: none; }
-
-        /* Tab Content Areas */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        /* For You Section */
-        .for-you-section { max-width: 900px; }
-        .section-title { font-family: 'Playfair Display', serif; font-size: 2.5em; font-weight: 700; margin-bottom: 40px; color: var(--text-dark); }
-        .recommended-story { border-bottom: 1px solid var(--border); padding: 40px 0; cursor: pointer; transition: all 0.2s; }
-        .recommended-story:hover { background: var(--hover); margin: 0 -20px; padding: 40px 20px; }
-        .rec-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .rec-reason { font-size: 0.85em; color: var(--text-medium); font-style: italic; }
-        .rec-title { font-family: 'Playfair Display', serif; font-size: 1.8em; font-weight: 700; line-height: 1.3; margin-bottom: 12px; color: var(--text-dark); }
-        .rec-excerpt { font-size: 1em; line-height: 1.6; color: var(--text-medium); margin-bottom: 16px; }
-        .rec-footer { display: flex; align-items: center; justify-content: space-between; }
-        .rec-reading-time { font-size: 0.85em; color: var(--text-light); }
-        .rec-actions { display: flex; gap: 16px; }
-
-        /* Following Section */
-        .following-stories { max-width: 900px; }
-        .empty-state { text-align: center; padding: 100px 40px; }
-        .empty-icon { font-size: 4em; margin-bottom: 20px; opacity: 0.3; }
-        .empty-title { font-size: 1.5em; font-weight: 600; margin-bottom: 12px; color: var(--text-dark); }
-        .empty-text { color: var(--text-medium); margin-bottom: 30px; }
-        .btn-explore { display: inline-block; padding: 12px 24px; background: var(--primary); color: white; border-radius: 24px; text-decoration: none; font-weight: 600; }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .container { padding: 40px 24px; }
-            .header-content, .nav-tabs-content { padding: 0 24px; }
-            .story-grid { grid-template-columns: 1fr; gap: 60px; }
-            .brief-card { padding: 40px; }
-            .brief-title { font-size: 2.5em; }
-            .story-title { font-size: 1.6em; }
-            /* Remove placeholder on single-column layouts */
-            .story-card.placeholder { display: none; }
-        }
-
-        /* Save & Follow Buttons */
-        .btn-follow { padding: 6px 16px; background: var(--primary); color: white; border-radius: 20px; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
-        .btn-follow:hover { background: #B01030; }
-        .btn-follow.following { background: var(--text-dark); }
-        .category-tag { display: inline-block; padding: 4px 12px; background: var(--bg-light); border-radius: 16px; font-size: 0.8em; font-weight: 600; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* Audio indicator */
-        .audio-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(220, 20, 60, 0.1); color: var(--primary); border-radius: 16px; font-size: 0.85em; font-weight: 600; }
-
-        /* Screen-reader only */
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Kolkata Chronicle</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #DC143C;
+      --text-dark: #242424;
+      --text-medium: #6B6B6B;
+      --text-light: #8B8B8B;
+      --border: #E6E6E6;
+      --bg-white: #FFFFFF;
+      --bg-light: #FAFAFA;
+      --hover: #F5F5F5;
+    }
+    body { font-family: 'Inter', -apple-system, sans-serif; color: var(--text-dark); background: var(--bg-white); line-height: 1.6; }
+    .header { border-bottom: 1px solid var(--border); padding: 20px 0; background: var(--bg-white); position: sticky; top: 0; z-index: 100; }
+    .header-content { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 2em; font-weight: 700; color: var(--primary); text-decoration: none; }
+    .header-actions { display: flex; align-items: center; gap: 30px; }
+    .header-actions a { color: var(--text-dark); text-decoration: none; font-size: 0.95em; font-weight: 500; }
+    .btn-subscribe { background: var(--primary); color: white; padding: 10px 24px; border-radius: 24px; font-weight: 600; transition: all 0.2s; }
+    .btn-subscribe:hover { background: #B01030; }
+    .nav-tabs { border-bottom: 1px solid var(--border); background: var(--bg-white); position: sticky; top: 77px; z-index: 99; }
+    .nav-tabs-content { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: flex; gap: 40px; }
+    .nav-tab { padding: 16px 0; color: var(--text-medium); text-decoration: none; font-size: 0.95em; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; cursor: pointer; }
+    .nav-tab:hover { color: var(--text-dark); }
+    .nav-tab.active { color: var(--text-dark); border-bottom-color: var(--text-dark); }
+    .container { max-width: 1400px; margin: 0 auto; padding: 60px 40px; }
+    .brief-card { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-radius: 12px; padding: 60px; margin-bottom: 80px; color: white; position: relative; overflow: hidden; }
+    .brief-card::before { content: '☕'; position: absolute; font-size: 20em; opacity: 0.05; right: -40px; top: -60px; }
+    .brief-time { font-size: 0.9em; opacity: 0.7; margin-bottom: 12px; }
+    .brief-title { font-family: 'Playfair Display', serif; font-size: 3.5em; font-weight: 700; margin-bottom: 20px; line-height: 1.1; }
+    .brief-subtitle { font-size: 1.3em; opacity: 0.9; margin-bottom: 40px; max-width: 700px; line-height: 1.5; }
+    .brief-actions { display: flex; gap: 16px; }
+    .btn-brief { padding: 14px 28px; border-radius: 28px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; transition: all 0.2s; font-size: 0.95em; border: none; cursor: pointer; }
+    .btn-read { background: white; color: var(--text-dark); }
+    .btn-read:hover { background: #f0f0f0; }
+    .btn-listen { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); }
+    .btn-listen:hover { background: rgba(255,255,255,0.2); }
+    .story-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 60px 80px; margin-bottom: 100px; }
+    .story-card { cursor: pointer; transition: transform 0.2s; height: max-content; align-self: start; }
+    .story-card:hover { transform: translateY(-2px); }
+    .story-image { width: 100%; height: 360px; object-fit: cover; border-radius: 8px; margin-bottom: 24px; display: block; }
+    .story-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.85em; color: var(--text-medium); }
+    .author-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    .author-name { font-weight: 500; color: var(--text-dark); }
+    .story-title { font-family: 'Playfair Display', serif; font-size: 2em; font-weight: 700; line-height: 1.2; margin-bottom: 16px; color: var(--text-dark); }
+    .story-summary { font-size: 1.05em; line-height: 1.6; color: var(--text-medium); margin-bottom: 20px; }
+    .story-actions { display: flex; align-items: center; gap: 24px; font-size: 0.9em; color: var(--text-medium); }
+    .story-action { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: color 0.2s; }
+    .story-action:hover { color: var(--text-dark); }
+    .story-card.placeholder { visibility: hidden; pointer-events: none; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .for-you-section { max-width: 900px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 2.5em; font-weight: 700; margin-bottom: 40px; color: var(--text-dark); }
+    .recommended-story { border-bottom: 1px solid var(--border); padding: 40px 0; cursor: pointer; transition: all 0.2s; }
+    .recommended-story:hover { background: var(--hover); margin: 0 -20px; padding: 40px 20px; }
+    .rec-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .rec-reason { font-size: 0.85em; color: var(--text-medium); font-style: italic; }
+    .rec-title { font-family: 'Playfair Display', serif; font-size: 1.8em; font-weight: 700; line-height: 1.3; margin-bottom: 12px; color: var(--text-dark); }
+    .rec-excerpt { font-size: 1em; line-height: 1.6; color: var(--text-medium); margin-bottom: 16px; }
+    .rec-footer { display: flex; align-items: center; justify-content: space-between; }
+    .rec-reading-time { font-size: 0.85em; color: var(--text-light); }
+    .rec-actions { display: flex; gap: 16px; }
+    .following-stories { max-width: 1400px; margin: 0 auto; padding: 0; }
+    .following-stories.empty-view { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; text-align: center; }
+    .empty-state { padding: 40px 24px; }
+    .empty-icon { font-size: 4em; margin-bottom: 20px; opacity: 0.3; }
+    .empty-title { font-size: 1.5em; font-weight: 600; margin-bottom: 12px; color: var(--text-dark); }
+    .empty-text { color: var(--text-medium); margin-bottom: 30px; }
+    .btn-explore { display: inline-block; padding: 12px 24px; background: var(--primary); color: white; border-radius: 24px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+    .btn-explore:hover { background: #B01030; transform: translateY(-2px); }
+    .followed-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; width: 100%; }
+    .followed-author { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .followed-author::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), #764ba2); transform: scaleX(0); transition: transform 0.3s ease; }
+    .followed-author:hover { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12); border-color: var(--primary); }
+    .followed-author:hover::before { transform: scaleX(1); }
+    .author-avatar-large { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 16px; border: 3px solid var(--bg-light); transition: all 0.3s ease; }
+    .followed-author:hover .author-avatar-large { border-color: var(--primary); transform: scale(1.05); }
+    .followed-author h4 { font-size: 1.3em; margin: 0 0 8px 0; color: var(--text-dark); font-weight: 600; }
+    .author-bio { font-size: 0.9em; color: var(--text-medium); margin: 0 0 16px 0; line-height: 1.4; min-height: 40px; }
+    .author-stats { display: flex; gap: 20px; margin-bottom: 16px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); width: 100%; justify-content: center; }
+    .author-stat { display: flex; flex-direction: column; align-items: center; }
+    .stat-number-small { font-size: 1.4em; font-weight: 700; color: var(--text-dark); }
+    .stat-label-small { font-size: 0.85em; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px; }
+    .author-topics { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px; }
+    .topic-tag { background: var(--bg-light); color: var(--text-medium); padding: 6px 14px; border-radius: 16px; font-size: 0.8em; font-weight: 600; }
+    .btn-unfollow { padding: 10px 24px; background: var(--text-dark); color: white; border: none; border-radius: 24px; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; }
+    .btn-unfollow:hover { background: #333; transform: translateY(-2px); }
+    @media (max-width: 1024px) {
+      .container { padding: 40px 24px; }
+      .header-content, .nav-tabs-content { padding: 0 24px; }
+      .story-grid { grid-template-columns: 1fr; gap: 60px; }
+      .brief-card { padding: 40px; }
+      .brief-title { font-size: 2.5em; }
+      .story-title { font-size: 1.6em; }
+      .story-card.placeholder { display: none; }
+      .following-stories { min-height: calc(100vh - 180px); }
+      .followed-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    }
+    .btn-follow { padding: 6px 16px; background: var(--primary); color: white; border-radius: 20px; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-follow:hover { background: #B01030; }
+    .btn-follow.following { background: var(--text-dark); }
+    .category-tag { display: inline-block; padding: 4px 12px; background: var(--bg-light); border-radius: 16px; font-size: 0.8em; font-weight: 600; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px; }
+    .audio-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(220, 20, 60, 0.1); color: var(--primary); border-radius: 16px; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+    .audio-badge:hover { background: rgba(220, 20, 60, 0.15); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+  </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <a href="#" class="logo">The Kolkata Chronicle</a>
-            <div class="header-actions">
-                <a href="#">কলকাতা ক্রনিকল</a>
-                <a href="#" class="btn-subscribe">Subscribe</a>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-        <div class="nav-tabs-content">
-            <a href="#home" class="nav-tab active" data-tab="home">Home</a>
-            <a href="#for-you" class="nav-tab" data-tab="for-you">For You</a>
-            <a href="#following" class="nav-tab" data-tab="following">Following</a>
-            <a href="#adda" class="nav-tab">আড্ডা</a>
-            <a href="#culture" class="nav-tab">সংস্কৃতি</a>
-            <a href="#food" class="nav-tab">মাছ-ভাত</a>
-            <a href="#metro" class="nav-tab">Metro</a>
-            <a href="#heritage" class="nav-tab">Heritage</a>
-            <a href="#audio" class="nav-tab">🎧 Audio</a>
-        </div>
-    </nav>
-
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Home Tab -->
-        <div id="home-content" class="tab-content active">
-            <!-- Brief Card -->
-            <div class="brief-card">
-                <div class="brief-time">Thursday, October 16, 2025 • 7:30 AM</div>
-                <h1 class="brief-title">মর্নিং ব্রিফ</h1>
-                <p class="brief-subtitle">Everything you need to know about Kolkata today. Your 5-minute companion before the first cup of cha.</p>
-                <div class="brief-actions">
-                    <a href="#" class="btn-brief btn-read"><span>📄</span>Read Brief (5 min)</a>
-                    <a href="#" class="btn-brief btn-listen" data-tts-target="#brief-tts"><span>🎧</span>Listen to Podcast (8 min)</a>
-                </div>
-                <!-- Text for TTS -->
-                <div id="brief-tts" class="sr-only">Morning Brief. Everything you need to know about Kolkata today. Highlights: sustainable pandals, metro breakdown, heritage sweet shops, and the coaching center investigation.</div>
-            </div>
-
-            <!-- Story Grid 2x2 -->
-            <div class="story-grid" id="home-story-grid">
-                <!-- Story 1 -->
-                <article class="story-card">
-                    <img src="https://images.unsplash.com/photo-1558862107-d49ef2a04d72?w=800" alt="Durga Puja" class="story-image" />
-                    <div class="story-meta">
-                        <img src="https://i.pravatar.cc/150?img=1" alt="Author" class="author-avatar" />
-                        <span class="author-name">Anindita Chatterjee</span><span>•</span><span>Oct 16</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <span class="category-tag">দুর্গাপূজা</span>
-                    <h2 class="story-title">Deshapriya Park's Revolutionary Eco-Friendly Pandal</h2>
-                    <p class="story-summary">South Kolkata's iconic puja committee breaks tradition with 100% sustainable materials—bamboo, terracotta, and natural dyes. Could this inspire 3,000+ pandals across Bengal?</p>
-                    <div class="story-actions">
-                        <span class="story-action">⏱️ 6 min read</span>
-                        <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
-                        <span class="story-action">💬 34</span>
-                        <span class="story-action">🔖 Save</span>
-                    </div>
-                </article>
-
-                <!-- Story 2 -->
-                <article class="story-card">
-                    <img src="metro.png" alt="Kolkata Metro Breakdown" class="story-image" />
-                    <div class="story-meta">
-                        <img src="https://i.pravatar.cc/150?img=2" alt="Author" class="author-avatar" />
-                        <span class="author-name">Rajesh Kumar</span><span>•</span><span>Oct 16</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <span class="category-tag">মেট্রো ম্যাটার্স</span>
-                    <h2 class="story-title">50,000 Commuters Stranded as Metro Breaks Down</h2>
-                    <p class="story-summary">Technical glitch halts North-South line for 3 hours during rush hour. Office-goers forced to walk through monsoon rain. Metro Rail promises investigation but patterns emerge.</p>
-                    <div class="story-actions">
-                        <span class="story-action">⏱️ 5 min read</span>
-                        <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
-                        <span class="story-action">💬 89</span>
-                        <span class="story-action">🔖 Save</span>
-                    </div>
-                </article>
-
-                <!-- Story 3 -->
-                <article class="story-card">
-                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800" alt="Sweet Shop" class="story-image" />
-                    <div class="story-meta">
-                        <img src="https://i.pravatar.cc/150?img=3" alt="Author" class="author-avatar" />
-                        <span class="author-name">Priya Banerjee</span><span>•</span><span>Oct 15</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <span class="category-tag">মাছ-ভাত</span>
-                    <h2 class="story-title">7 Century-Old Sweet Shops Kolkata Has Forgotten</h2>
-                    <p class="story-summary">From Shyambazar to Bowbazar, family-run mishti doi and rosogolla shops serving for 100+ years. We found their stories before they disappear into history.</p>
-                    <div class="story-actions">
-                        <span class="story-action">⏱️ 8 min read</span>
-                        <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
-                        <span class="story-action">💬 56</span>
-                        <span class="story-action">🔖 Save</span>
-                    </div>
-                </article>
-
-                <!-- Story 4 -->
-                <article class="story-card">
-                    <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800" alt="Students" class="story-image" />
-                    <div class="story-meta">
-                        <img src="https://i.pravatar.cc/150?img=4" alt="Author" class="author-avatar" />
-                        <span class="author-name">Debashish Ghosh</span><span>•</span><span>Oct 15</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <span class="category-tag">শিক্ষা</span>
-                    <h2 class="story-title">Coaching Center Mafia: The Rs 2,000 Crore Industry</h2>
-                    <p class="story-summary">Six-month investigation reveals illegal practices, fake promises, and psychological pressure tactics across Salt Lake and College Street. How they exploit lakhs of students.</p>
-                    <div class="story-actions">
-                        <span class="story-action">⏱️ 15 min read</span>
-                        <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
-                        <span class="story-action">💬 127</span>
-                        <span class="story-action">🔖 Save</span>
-                    </div>
-                </article>
-            </div>
-        </div>
-
-        <!-- For You Tab -->
-        <div id="for-you-content" class="tab-content">
-            <div class="for-you-section">
-                <h2 class="section-title">Recommended For You</h2>
-
-                <article class="recommended-story">
-                    <div class="rec-meta">
-                        <img src="https://i.pravatar.cc/150?img=5" alt="Author" class="author-avatar" />
-                        <span class="author-name">Soumya Sengupta</span><span>•</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <div class="rec-reason">💭 Based on your interest in Heritage & Culture</div>
-                    <h3 class="rec-title">The Last Tram Drivers: Oral Histories Before They Retire</h3>
-                    <p class="rec-excerpt">Kolkata's iconic yellow trams are dying. But before they disappear, we sat with the men who've driven them for 40+ years. Their stories of the city, passengers who became friends, and a Kolkata that no longer exists.</p>
-                    <div class="rec-footer">
-                        <div class="rec-reading-time"><span>⏱️ 9 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
-                        <div class="rec-actions"><span class="story-action">💬 42</span><span class="story-action">🔖 Save</span></div>
-                    </div>
-                </article>
-
-                <article class="recommended-story">
-                    <div class="rec-meta">
-                        <img src="https://i.pravatar.cc/150?img=6" alt="Author" class="author-avatar" />
-                        <span class="author-name">Rituparna Das</span><span>•</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <div class="rec-reason">💭 Popular in মাছ-ভাত section</div>
-                    <h3 class="rec-title">Biryani Economics: Why Kolkata Style Costs Less But Tastes Better</h3>
-                    <p class="rec-excerpt">We analyzed 47 biryani joints across Kolkata. Interviewed historians, chefs, and elderly Nawabs. The truth about potato in biryani, why it costs Rs 150 here vs Rs 400 in Delhi, and the secret ingredient nobody talks about.</p>
-                    <div class="rec-footer">
-                        <div class="rec-reading-time"><span>⏱️ 6 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
-                        <div class="rec-actions"><span class="story-action">💬 91</span><span class="story-action">🔖 Save</span></div>
-                    </div>
-                </article>
-
-                <article class="recommended-story">
-                    <div class="rec-meta">
-                        <img src="https://i.pravatar.cc/150?img=7" alt="Author" class="author-avatar" />
-                        <span class="author-name">Arijit Mondal</span><span>•</span>
-                        <button class="btn-follow">+ Follow</button>
-                    </div>
-                    <div class="rec-reason">💭 Trending investigation</div>
-                    <h3 class="rec-title">Metro Line 6 Delayed Again: Following the Corruption Trail</h3>
-                    <p class="rec-excerpt">Promised in 2018. Deadline pushed 7 times. Rs 8,000 crore spent. We obtained confidential documents revealing where the money actually went. Names, companies, connections—all documented.</p>
-                    <div class="rec-footer">
-                        <div class="rec-reading-time"><span>⏱️ 11 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
-                        <div class="rec-actions"><span class="story-action">💬 203</span><span class="story-action">🔖 Save</span></div>
-                    </div>
-                </article>
-            </div>
-        </div>
-
-        <!-- Following Tab -->
-        <div id="following-content" class="tab-content">
-            <div class="following-stories">
-                <div class="empty-state">
-                    <div class="empty-icon">📚</div>
-                    <h3 class="empty-title">Start Following Authors</h3>
-                    <p class="empty-text">Follow your favorite writers to see their latest stories here. Never miss updates from authors you love.</p>
-                    <a href="#for-you" class="btn-explore">Explore Stories</a>
-                </div>
-            </div>
-        </div>
+  <header class="header">
+    <div class="header-content">
+      <a href="#" class="logo">The Kolkata Chronicle</a>
+      <div class="header-actions">
+        <a href="#">কলকাতা ক্রনিকল</a>
+        <a href="#" class="btn-subscribe">Subscribe</a>
+      </div>
     </div>
-
-    <!-- polite live region for a11y messages -->
-    <div id="sr-status" class="sr-only" aria-live="polite"></div>
-
-    <script>
-        // --- Utility: Add placeholder to ensure even grid columns (2 per row) ---
-        function ensureEvenGrid(selector) {
-            document.querySelectorAll(selector).forEach(grid => {
-                // Remove existing placeholders first
-                grid.querySelectorAll('.story-card.placeholder').forEach(p => p.remove());
-                const cards = grid.querySelectorAll('.story-card');
-
-                // Only add placeholder on desktop/tablet (2-col) — media query mirror
-                const isSingleColumn = window.matchMedia('(max-width: 1024px)').matches;
-                if (!isSingleColumn && cards.length % 2 !== 0) {
-                    const ph = document.createElement('article');
-                    ph.className = 'story-card placeholder';
-                    ph.setAttribute('aria-hidden', 'true');
-                    ph.innerHTML = '<div style="height:360px; border-radius:8px;"></div>';
-                    grid.appendChild(ph);
-                }
-            });
+  </header>
+  <nav class="nav-tabs">
+    <div class="nav-tabs-content">
+      <a href="#home" class="nav-tab active" data-tab="home">Home</a>
+      <a href="#for-you" class="nav-tab" data-tab="for-you">For You</a>
+      <a href="#following" class="nav-tab" data-tab="following">Following</a>
+      <a href="#adda" class="nav-tab">আড্ডা</a>
+      <a href="#culture" class="nav-tab">সংস্কৃতি</a>
+      <a href="#food" class="nav-tab">মাছ-ভাত</a>
+      <a href="#metro" class="nav-tab">Metro</a>
+      <a href="#heritage" class="nav-tab">Heritage</a>
+      <a href="#audio" class="nav-tab">🎧 Audio</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="home-content" class="tab-content active">
+      <div class="brief-card">
+        <div class="brief-time">Thursday, October 16, 2025 • 7:30 AM</div>
+        <h1 class="brief-title">মর্নিং ব্রিফ</h1>
+        <p class="brief-subtitle">Everything you need to know about Kolkata today. Your 5-minute companion before the first cup of cha.</p>
+        <div class="brief-actions">
+          <a href="#" class="btn-brief btn-read"><span>📄</span>Read Brief (5 min)</a>
+          <button class="btn-brief btn-listen" data-tts-target="#brief-tts"><span>🎧</span>Listen to Podcast (8 min)</button>
+        </div>
+        <div id="brief-tts" class="sr-only">Morning Brief. Everything you need to know about Kolkata today.</div>
+      </div>
+      <div class="story-grid" id="home-story-grid">
+        <article class="story-card">
+          <img src="https://images.unsplash.com/photo-1558862107-d49ef2a04d72?w=800" alt="Durga Puja" class="story-image">
+          <div class="story-meta">
+            <img src="https://i.pravatar.cc/150?img=1" alt="Author" class="author-avatar">
+            <span class="author-name">Anindita Chatterjee</span><span>•</span><span>Oct 16</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <span class="category-tag">দুর্গাপূজা</span>
+          <h2 class="story-title">Deshapriya Park's Revolutionary Eco-Friendly Pandal</h2>
+          <p class="story-summary">South Kolkata's iconic puja committee breaks tradition with 100% sustainable materials—bamboo, terracotta, and natural dyes.</p>
+          <div class="story-actions">
+            <span class="story-action">⏱️ 6 min read</span>
+            <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
+            <span class="story-action">💬 34</span>
+            <span class="story-action">📖 Save</span>
+          </div>
+        </article>
+        <article class="story-card">
+          <img src="metro.png" alt="Metro" class="story-image">
+          <div class="story-meta">
+            <img src="https://i.pravatar.cc/150?img=2" alt="Author" class="author-avatar">
+            <span class="author-name">Rajesh Kumar</span><span>•</span><span>Oct 16</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <span class="category-tag">মেট্রো ম্যাটার্স</span>
+          <h2 class="story-title">50,000 Commuters Stranded as Metro Breaks Down</h2>
+          <p class="story-summary">Technical glitch halts North-South line for 3 hours during rush hour. Office-goers forced to walk through monsoon rain.</p>
+          <div class="story-actions">
+            <span class="story-action">⏱️ 5 min read</span>
+            <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
+            <span class="story-action">💬 89</span>
+            <span class="story-action">📖 Save</span>
+          </div>
+        </article>
+        <article class="story-card">
+          <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800" alt="Sweet Shop" class="story-image">
+          <div class="story-meta">
+            <img src="https://i.pravatar.cc/150?img=3" alt="Author" class="author-avatar">
+            <span class="author-name">Priya Banerjee</span><span>•</span><span>Oct 15</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <span class="category-tag">মাছ-ভাত</span>
+          <h2 class="story-title">7 Century-Old Sweet Shops Kolkata Has Forgotten</h2>
+          <p class="story-summary">From Shyambazar to Bowbazar, family-run mishti doi and rosogolla shops serving for 100+ years.</p>
+          <div class="story-actions">
+            <span class="story-action">⏱️ 8 min read</span>
+            <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
+            <span class="story-action">💬 56</span>
+            <span class="story-action">📖 Save</span>
+          </div>
+        </article>
+        <article class="story-card">
+          <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800" alt="Students" class="story-image">
+          <div class="story-meta">
+            <img src="https://i.pravatar.cc/150?img=4" alt="Author" class="author-avatar">
+            <span class="author-name">Debashish Ghosh</span><span>•</span><span>Oct 15</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <span class="category-tag">শিক্ষা</span>
+          <h2 class="story-title">Coaching Center Mafia: The Rs 2,000 Crore Industry</h2>
+          <p class="story-summary">Six-month investigation reveals illegal practices across Salt Lake and College Street.</p>
+          <div class="story-actions">
+            <span class="story-action">⏱️ 15 min read</span>
+            <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button>
+            <span class="story-action">💬 127</span>
+            <span class="story-action">📖 Save</span>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div id="for-you-content" class="tab-content">
+      <div class="for-you-section">
+        <h2 class="section-title">Recommended For You</h2>
+        <article class="recommended-story">
+          <div class="rec-meta">
+            <img src="https://i.pravatar.cc/150?img=5" alt="Author" class="author-avatar">
+            <span class="author-name">Soumya Sengupta</span><span>•</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <div class="rec-reason">💭 Based on your interest in Heritage & Culture</div>
+          <h3 class="rec-title">The Last Tram Drivers: Oral Histories Before They Retire</h3>
+          <p class="rec-excerpt">Kolkata's iconic yellow trams are dying. But before they disappear, we sat with the men who've driven them for 40+ years.</p>
+          <div class="rec-footer">
+            <div class="rec-reading-time"><span>⏱️ 9 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
+            <div class="rec-actions"><span class="story-action">💬 42</span><span class="story-action">📖 Save</span></div>
+          </div>
+        </article>
+        <article class="recommended-story">
+          <div class="rec-meta">
+            <img src="https://i.pravatar.cc/150?img=6" alt="Author" class="author-avatar">
+            <span class="author-name">Rituparna Das</span><span>•</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <div class="rec-reason">💭 Popular in মাছ-ভাত section</div>
+          <h3 class="rec-title">Biryani Economics: Why Kolkata Style Costs Less But Tastes Better</h3>
+          <p class="rec-excerpt">We analyzed 47 biryani joints across Kolkata. Interviewed historians, chefs, and elderly Nawabs.</p>
+          <div class="rec-footer">
+            <div class="rec-reading-time"><span>⏱️ 6 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
+            <div class="rec-actions"><span class="story-action">💬 91</span><span class="story-action">📖 Save</span></div>
+          </div>
+        </article>
+        <article class="recommended-story">
+          <div class="rec-meta">
+            <img src="https://i.pravatar.cc/150?img=7" alt="Author" class="author-avatar">
+            <span class="author-name">Arijit Mondal</span><span>•</span>
+            <button class="btn-follow">+ Follow</button>
+          </div>
+          <div class="rec-reason">💭 Trending investigation</div>
+          <h3 class="rec-title">Metro Line 6 Delayed Again: Following the Corruption Trail</h3>
+          <p class="rec-excerpt">Promised in 2018. Deadline pushed 7 times. Rs 8,000 crore spent. We obtained confidential documents.</p>
+          <div class="rec-footer">
+            <div class="rec-reading-time"><span>⏱️ 11 min read</span> <span> • </span> <button class="audio-badge" data-tts-target="prevTitleSummary">🎧 Listen</button></div>
+            <div class="rec-actions"><span class="story-action">💬 203</span><span class="story-action">📖 Save</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div id="following-content" class="tab-content">
+      <div class="following-stories empty-view" id="following-container">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">📚</div>
+          <h3 class="empty-title">Start Following Authors</h3>
+          <p class="empty-text">Follow your favorite writers to see their latest stories here.</p>
+          <a href="#for-you" class="btn-explore">Explore Stories</a>
+        </div>
+        <div id="following-content-with-authors" style="display: none;">
+          <div class="followed-list" id="followed-list" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="sr-status" class="sr-only" aria-live="polite"></div>
+  <script>
+    function ensureEvenGrid(selector) {
+      document.querySelectorAll(selector).forEach(grid => {
+        grid.querySelectorAll('.story-card.placeholder').forEach(p => p.remove());
+        const cards = grid.querySelectorAll('.story-card');
+        const isSingleColumn = window.matchMedia('(max-width: 1024px)').matches;
+        if (!isSingleColumn && cards.length % 2 !== 0) {
+          const ph = document.createElement('article');
+          ph.className = 'story-card placeholder';
+          ph.setAttribute('aria-hidden', 'true');
+          ph.innerHTML = '<div style="height:360px; border-radius:8px;"></div>';
+          grid.appendChild(ph);
         }
+      });
+    }
 
-        // Call on load and on resize (to handle responsive switch)
-        function updateGrids() { ensureEvenGrid('#home-story-grid'); }
-        window.addEventListener('DOMContentLoaded', updateGrids);
-        window.addEventListener('resize', updateGrids);
+    function updateGrids() {
+      ensureEvenGrid('#home-story-grid');
+    }
 
-        // --- Tabs ---
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetTab = tab.getAttribute('data-tab');
-                if (targetTab) {
-                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                    document.getElementById(`${targetTab}-content`).classList.add('active');
-                }
-            });
-        });
+    window.addEventListener('DOMContentLoaded', updateGrids);
+    window.addEventListener('resize', updateGrids);
 
-        // --- Follow button toggle ---
-        document.querySelectorAll('.btn-follow').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (btn.textContent.includes('Follow')) {
-                    btn.textContent = 'Following';
-                    btn.classList.add('following');
-                } else {
-                    btn.textContent = '+ Follow';
-                    btn.classList.remove('following');
-                }
-            });
-        });
-
-        // --- Save story ---
-        document.querySelectorAll('.story-action').forEach(action => {
-            if (action.textContent.includes('Save')) {
-                action.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (action.textContent.trim() === '🔖 Save') {
-                        action.textContent = '✓ Saved';
-                        action.style.color = 'var(--primary)';
-                    } else {
-                        action.textContent = '🔖 Save';
-                        action.style.color = '';
-                    }
-                });
-            }
-        });
-
-        // --- Story card click ---
-        document.querySelectorAll('.story-card, .recommended-story').forEach(card => {
-            card.addEventListener('click', () => {
-                console.log('Story clicked - would navigate to full article');
-            });
-        });
-
-        // --- Audio (Listen) using Web Speech API ---
-        const srStatus = document.getElementById('sr-status');
-        let speaking = false;
-        let paused = false;
-        let currentUtterance = null;
-
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) {
-                alert('Sorry, your browser does not support text-to-speech.');
-                return;
-            }
-            // If already speaking, toggle pause/resume
-            if (speaking) {
-                if (paused) {
-                    window.speechSynthesis.resume();
-                    paused = false;
-                    srStatus.textContent = 'Resumed audio.';
-                } else {
-                    window.speechSynthesis.pause();
-                    paused = true;
-                    srStatus.textContent = 'Paused audio.';
-                }
-                return;
-            }
-            // Start new utterance
-            currentUtterance = new SpeechSynthesisUtterance(text);
-            currentUtterance.rate = 1; // normal speed
-            currentUtterance.pitch = 1;
-            currentUtterance.lang = 'en-IN';
-
-            currentUtterance.onstart = () => { speaking = true; paused = false; srStatus.textContent = 'Playing audio...'; };
-            currentUtterance.onend = () => { speaking = false; paused = false; currentUtterance = null; srStatus.textContent = 'Audio finished.'; };
-            currentUtterance.onerror = () => { speaking = false; paused = false; currentUtterance = null; srStatus.textContent = 'Audio error.'; };
-
-            window.speechSynthesis.cancel(); // stop any existing
-            window.speechSynthesis.speak(currentUtterance);
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', e => {
+        e.preventDefault();
+        const targetTab = tab.getAttribute('data-tab');
+        if (targetTab) {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+          document.getElementById(targetTab + '-content').classList.add('active');
         }
+      });
+    });
 
-        function getTitleAndSummaryFrom(el) {
-            // Find nearest article or recommended-story, then pull title + summary
-            const card = el.closest('.story-card, .recommended-story');
-            if (!card) return '';
-            const title = card.querySelector('.story-title, .rec-title')?.textContent?.trim() || '';
-            const summary = card.querySelector('.story-summary, .rec-excerpt')?.textContent?.trim() || '';
-            return `${title}. ${summary}`;
+    const FOLLOW_KEY = 'kcc_followed_authors_v1';
+    
+    const authorData = {
+      'Anindita Chatterjee': {
+        bio: 'Cultural journalist covering Durga Puja, festivals & Bengal traditions',
+        topics: ['দুর্গাপূজা', 'Culture', 'Heritage'],
+        stories: 28
+      },
+      'Rajesh Kumar': {
+        bio: 'Transportation & infrastructure reporter for Metro Rail coverage',
+        topics: ['Metro', 'Transport', 'Infrastructure'],
+        stories: 45
+      },
+      'Priya Banerjee': {
+        bio: 'Food historian exploring Kolkata\'s culinary heritage',
+        topics: ['মাছ-ভাত', 'Heritage', 'Food'],
+        stories: 52
+      },
+      'Debashish Ghosh': {
+        bio: 'Investigative journalist covering education & social issues',
+        topics: ['শিক্ষা', 'Investigation', 'Society'],
+        stories: 67
+      },
+      'Soumya Sengupta': {
+        bio: 'Heritage preservation advocate & oral history documentarian',
+        topics: ['Heritage', 'সংস্কৃতি', 'History'],
+        stories: 38
+      },
+      'Rituparna Das': {
+        bio: 'Culinary economist analyzing food culture & business',
+        topics: ['মাছ-ভাত', 'Economics', 'Culture'],
+        stories: 41
+      },
+      'Arijit Mondal': {
+        bio: 'Data journalist investigating corruption & public spending',
+        topics: ['Investigation', 'Metro', 'Politics'],
+        stories: 59
+      }
+    };
+    
+    const followedAuthors = new Map(JSON.parse(localStorage.getItem(FOLLOW_KEY) || '[]'));
+
+    function saveFollows() {
+      localStorage.setItem(FOLLOW_KEY, JSON.stringify([...followedAuthors]));
+    }
+
+    function wireFollowButtons(scope) {
+      scope = scope || document;
+      scope.querySelectorAll('.btn-follow').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const meta = btn.closest('.story-meta, .rec-meta');
+          const name = meta.querySelector('.author-name')?.textContent?.trim();
+          const avatar = meta.querySelector('.author-avatar')?.src;
+
+          if (!name) return;
+
+          if (!btn.classList.contains('following')) {
+            btn.textContent = 'Following';
+            btn.classList.add('following');
+            followedAuthors.set(name, avatar);
+          } else {
+            btn.textContent = '+ Follow';
+            btn.classList.remove('following');
+            followedAuthors.delete(name);
+          }
+          saveFollows();
+          updateFollowingTab();
+          reflectFollowState();
+        });
+      });
+    }
+
+    function reflectFollowState(scope) {
+      scope = scope || document;
+      scope.querySelectorAll('.btn-follow').forEach(btn => {
+        const meta = btn.closest('.story-meta, .rec-meta');
+        const name = meta.querySelector('.author-name')?.textContent?.trim();
+        if (name && followedAuthors.has(name)) {
+          btn.textContent = 'Following';
+          btn.classList.add('following');
+        } else {
+          btn.textContent = '+ Follow';
+          btn.classList.remove('following');
         }
+      });
+    }
 
-        // Brief Listen button
-        document.querySelectorAll('.btn-listen').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const selector = btn.getAttribute('data-tts-target');
-                const text = selector ? document.querySelector(selector)?.textContent?.trim() : '';
-                speakText(text || 'No content available to read.');
-            });
+    function updateFollowingTab() {
+      const list = document.getElementById('followed-list');
+      const empty = document.getElementById('empty-state');
+      const container = document.getElementById('following-container');
+      const contentWithAuthors = document.getElementById('following-content-with-authors');
+      
+      list.innerHTML = '';
+
+      if (followedAuthors.size === 0) {
+        container.classList.add('empty-view');
+        empty.style.display = 'block';
+        contentWithAuthors.style.display = 'none';
+        return;
+      }
+
+      container.classList.remove('empty-view');
+      empty.style.display = 'none';
+      contentWithAuthors.style.display = 'block';
+
+      const entries = [...followedAuthors.entries()];
+      entries.forEach(entry => {
+        const name = entry[0];
+        const avatar = entry[1];
+        const data = authorData[name] || {
+          bio: 'Author at The Kolkata Chronicle',
+          topics: ['General'],
+          stories: 15
+        };
+        
+        const card = document.createElement('div');
+        card.className = 'followed-author';
+        
+        const topicsHTML = data.topics.map(topic => '<span class="topic-tag">' + topic + '</span>').join('');
+        
+        card.innerHTML = '<img src="' + avatar + '" alt="' + name + '" class="author-avatar-large" />' +
+          '<h4>' + name + '</h4>' +
+          '<p class="author-bio">' + data.bio + '</p>' +
+          '<div class="author-stats">' +
+            '<div class="author-stat">' +
+              '<span class="stat-number-small">' + data.stories + '</span>' +
+              '<span class="stat-label-small">Stories</span>' +
+            '</div>' +
+            '<div class="author-stat">' +
+              '<span class="stat-number-small">' + Math.floor(Math.random() * 500 + 200) + '</span>' +
+              '<span class="stat-label-small">Followers</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="author-topics">' + topicsHTML + '</div>' +
+          '<button class="btn-unfollow" data-author="' + name + '">Unfollow</button>';
+        
+        card.addEventListener('click', e => {
+          if (!e.target.classList.contains('btn-unfollow')) {
+            window.location.hash = 'author/' + encodeURIComponent(name);
+            console.log('Navigate to author page: ' + name);
+          }
         });
-
-        // Per-card Listen badges
-        document.querySelectorAll('.audio-badge').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const mode = btn.getAttribute('data-tts-target');
-                let text = '';
-                if (mode === 'prevTitleSummary') {
-                    text = getTitleAndSummaryFrom(btn);
-                } else if (mode) {
-                    const el = document.querySelector(mode);
-                    text = el ? el.textContent.trim() : '';
-                }
-                speakText(text || 'No content available to read.');
-            });
+        
+        list.appendChild(card);
+      });
+      
+      list.querySelectorAll('.btn-unfollow').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const name = btn.getAttribute('data-author');
+          if (name && followedAuthors.has(name)) {
+            followedAuthors.delete(name);
+            saveFollows();
+            updateFollowingTab();
+            reflectFollowState();
+            document.getElementById('sr-status').textContent = 'Unfollowed ' + name;
+          }
         });
+      });
+    }
 
-        // Stop audio when navigating away or resizing significantly
-        window.addEventListener('beforeunload', () => window.speechSynthesis?.cancel());
-    </script>
+    window.addEventListener('DOMContentLoaded', () => {
+      wireFollowButtons(document);
+      reflectFollowState(document);
+      updateFollowingTab();
+    });
+
+    document.querySelectorAll('.story-action').forEach(action => {
+      if (action.textContent.includes('Save')) {
+        action.addEventListener('click', e => {
+          e.stopPropagation();
+          if (action.textContent.trim() === '📖 Save') {
+            action.textContent = '✓ Saved';
+            action.style.color = 'var(--primary)';
+          } else {
+            action.textContent = '📖 Save';
+            action.style.color = '';
+          }
+        });
+      }
+    });
+
+    document.querySelectorAll('.story-card, .recommended-story').forEach(card => {
+      card.addEventListener('click', () => {
+        console.log('Story clicked - would navigate to full article');
+      });
+    });
+
+    const srStatus = document.getElementById('sr-status');
+    let speaking = false;
+    let paused = false;
+    let currentUtterance = null;
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) {
+        alert('Sorry, your browser does not support text-to-speech.');
+        return;
+      }
+      if (speaking) {
+        if (paused) {
+          window.speechSynthesis.resume();
+          paused = false;
+          srStatus.textContent = 'Resumed audio.';
+        } else {
+          window.speechSynthesis.pause();
+          paused = true;
+          srStatus.textContent = 'Paused audio.';
+        }
+        return;
+      }
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.rate = 1;
+      currentUtterance.pitch = 1;
+      currentUtterance.lang = 'en-IN';
+
+      currentUtterance.onstart = () => {
+        speaking = true;
+        paused = false;
+        srStatus.textContent = 'Playing audio...';
+      };
+      
+      currentUtterance.onend = () => {
+        speaking = false;
+        paused = false;
+        currentUtterance = null;
+        srStatus.textContent = 'Audio finished.';
+      };
+      
+      currentUtterance.onerror = () => {
+        speaking = false;
+        paused = false;
+        currentUtterance = null;
+        srStatus.textContent = 'Audio error.';
+      };
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(currentUtterance);
+    }
+
+    function getTitleAndSummaryFrom(el) {
+      const card = el.closest('.story-card, .recommended-story');
+      if (!card) return '';
+      const title = card.querySelector('.story-title, .rec-title')?.textContent?.trim() || '';
+      const summary = card.querySelector('.story-summary, .rec-excerpt')?.textContent?.trim() || '';
+      return title + '. ' + summary;
+    }
+
+    document.querySelectorAll('.btn-listen').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const selector = btn.getAttribute('data-tts-target');
+        const text = selector ? document.querySelector(selector)?.textContent?.trim() : '';
+        speakText(text || 'No content available to read.');
+      });
+    });
+
+    document.querySelectorAll('.audio-badge').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const mode = btn.getAttribute('data-tts-target');
+        let text = '';
+        if (mode === 'prevTitleSummary') {
+          text = getTitleAndSummaryFrom(btn);
+        } else if (mode) {
+          const el = document.querySelector(mode);
+          text = el ? el.textContent.trim() : '';
+        }
+        speakText(text || 'No content available to read.');
+      });
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    });
+  </script>
 </body>
 </html>
