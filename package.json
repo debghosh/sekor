@@ -1,0 +1,34 @@
+{
+  "name": "sekor-bkc-production",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Kolkata Chronicle - Production System",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
+    "test": "pnpm --filter backend test && pnpm --filter frontend test",
+    "test:unit": "pnpm --filter backend test:unit && pnpm --filter frontend test:unit",
+    "test:integration": "pnpm --filter backend test:integration",
+    "test:e2e": "pnpm --filter frontend test:e2e",
+    "test:coverage": "pnpm run test:unit && pnpm run test:integration",
+    "lint": "pnpm --filter backend lint && pnpm --filter frontend lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:seed": "pnpm --filter backend db:seed",
+    "db:studio": "pnpm --filter backend db:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
