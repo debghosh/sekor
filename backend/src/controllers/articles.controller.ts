@@ -17,8 +17,8 @@ export const articlesController = {
       const result = await articlesService.getAll({
         page: page ? parseInt(page as string) : undefined,
         limit: limit ? parseInt(limit as string) : undefined,
-        categoryId: categoryId ? parseInt(categoryId as string) : undefined,
-        authorId: authorId ? parseInt(authorId as string) : undefined,
+        categoryId: categoryId as string,
+        authorId: authorId as string,
         status: status as string,
         search: search as string,
       });
@@ -35,7 +35,7 @@ export const articlesController = {
   async getById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const article = await articlesService.getById(parseInt(id));
+      const article = await articlesService.getById(id);
 
       res.status(200).json({
         data: article,
@@ -65,7 +65,7 @@ export const articlesController = {
         title,
         content,
         summary,
-        categoryId: parseInt(categoryId),
+        categoryId,
         authorId: req.user.userId,
         image,
         status,
@@ -91,12 +91,12 @@ export const articlesController = {
       const { title, content, summary, categoryId, image, status } = req.body;
 
       const article = await articlesService.update(
-        parseInt(id),
+        id,
         {
           title,
           content,
           summary,
-          categoryId: categoryId ? parseInt(categoryId) : undefined,
+          categoryId,
           image,
           status,
         },
@@ -123,7 +123,7 @@ export const articlesController = {
 
       const { id } = req.params;
       const result = await articlesService.delete(
-        parseInt(id),
+        id,
         req.user.userId
       );
 
@@ -138,7 +138,7 @@ export const articlesController = {
   async getByAuthor(req: AuthRequest, res: Response) {
     try {
       const { authorId } = req.params;
-      const articles = await articlesService.getByAuthor(parseInt(authorId));
+      const articles = await articlesService.getByAuthor(authorId);
 
       res.status(200).json({
         data: articles,

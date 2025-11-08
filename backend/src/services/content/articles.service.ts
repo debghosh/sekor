@@ -41,7 +41,7 @@ export const articlesService = {
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { type: 'ARTICLE' };
 
     if (categoryId) where.categoryId = categoryId;
     if (authorId) where.authorId = authorId;
@@ -49,7 +49,7 @@ export const articlesService = {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { body: { contains: search, mode: 'insensitive' } },
+        { summary: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -77,13 +77,25 @@ export const articlesService = {
     ]);
 
     // Map to match expected Article structure
-    const articles = contents.map(content => ({
-      ...content,
-      content: content.body, // Map body to content
+    const articles = contents.map((content: any) => ({
+      id: content.id,
+      title: content.title,
+      summary: content.summary,
+      content: (content.typeData as any)?.body || '',
+      image: (content.typeData as any)?.featuredImage || null,
+      status: content.status,
+      views: content.views,
+      categoryId: content.categoryId,
+      authorId: content.authorId,
+      createdAt: content.createdAt,
+      updatedAt: content.updatedAt,
       author: {
-        ...content.author,
+        id: content.author.id,
+        name: content.author.name,
+        email: content.author.email,
         avatar: content.author.avatarUrl,
       },
+      category: content.category,
     }));
 
     return {
@@ -98,7 +110,7 @@ export const articlesService = {
   },
 
   async getById(id: string) {
-    const content = await prisma.content.findUnique({
+    const content: any = await prisma.content.findUnique({
       where: { id },
       include: {
         author: {
@@ -126,25 +138,48 @@ export const articlesService = {
 
     // Map to match expected Article structure
     return {
-      ...content,
-      content: content.body,
+      id: content.id,
+      title: content.title,
+      summary: content.summary,
+      content: (content.typeData as any)?.body || '',
+      image: (content.typeData as any)?.featuredImage || null,
+      status: content.status,
+      views: content.views,
+      categoryId: content.categoryId,
+      authorId: content.authorId,
+      createdAt: content.createdAt,
+      updatedAt: content.updatedAt,
       author: {
-        ...content.author,
+        id: content.author.id,
+        name: content.author.name,
+        email: content.author.email,
+        bio: content.author.bio,
         avatar: content.author.avatarUrl,
       },
+      category: content.category,
     };
   },
 
   async create(input: CreateArticleInput) {
-    const content = await prisma.content.create({
+    // Generate slug from title
+    const slug = input.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+    const content: any = await prisma.content.create({
       data: {
+        type: 'ARTICLE',
         title: input.title,
-        body: input.content, // Map content to body
+        slug,
         summary: input.summary,
         categoryId: input.categoryId,
         authorId: input.authorId,
-        featuredImage: input.image,
         status: input.status || 'DRAFT',
+        typeData: {
+          body: input.content,
+          featuredImage: input.image || null,
+        },
       },
       include: {
         author: {
@@ -160,13 +195,24 @@ export const articlesService = {
     });
 
     return {
-      ...content,
-      content: content.body,
-      image: content.featuredImage,
+      id: content.id,
+      title: content.title,
+      summary: content.summary,
+      content: (content.typeData as any).body,
+      image: (content.typeData as any).featuredImage,
+      status: content.status,
+      views: content.views,
+      categoryId: content.categoryId,
+      authorId: content.authorId,
+      createdAt: content.createdAt,
+      updatedAt: content.updatedAt,
       author: {
-        ...content.author,
+        id: content.author.id,
+        name: content.author.name,
+        email: content.author.email,
         avatar: content.author.avatarUrl,
       },
+      category: content.category,
     };
   },
 
@@ -185,14 +231,28 @@ export const articlesService = {
     }
 
     const updateData: any = {};
-    if (input.title) updateData.title = input.title;
-    if (input.content) updateData.body = input.content;
-    if (input.summary) updateData.summary = input.summary;
+    if (input.title) {
+      updateData.title = input.title;
+      // Update slug if title changes
+      updateData.slug = input.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    }
+    if (input.summary !== undefined) updateData.summary = input.summary;
     if (input.categoryId) updateData.categoryId = input.categoryId;
-    if (input.image) updateData.featuredImage = input.image;
     if (input.status) updateData.status = input.status;
 
-    const content = await prisma.content.update({
+    // Update typeData
+    const currentTypeData = (existingContent.typeData as any) || {};
+    const newTypeData = { ...currentTypeData };
+    
+    if (input.content !== undefined) newTypeData.body = input.content;
+    if (input.image !== undefined) newTypeData.featuredImage = input.image;
+    
+    updateData.typeData = newTypeData;
+
+    const content: any = await prisma.content.update({
       where: { id },
       data: updateData,
       include: {
@@ -209,13 +269,24 @@ export const articlesService = {
     });
 
     return {
-      ...content,
-      content: content.body,
-      image: content.featuredImage,
+      id: content.id,
+      title: content.title,
+      summary: content.summary,
+      content: (content.typeData as any).body,
+      image: (content.typeData as any).featuredImage,
+      status: content.status,
+      views: content.views,
+      categoryId: content.categoryId,
+      authorId: content.authorId,
+      createdAt: content.createdAt,
+      updatedAt: content.updatedAt,
       author: {
-        ...content.author,
+        id: content.author.id,
+        name: content.author.name,
+        email: content.author.email,
         avatar: content.author.avatarUrl,
       },
+      category: content.category,
     };
   },
 
@@ -242,7 +313,10 @@ export const articlesService = {
 
   async getByAuthor(authorId: string) {
     const contents = await prisma.content.findMany({
-      where: { authorId },
+      where: { 
+        authorId,
+        type: 'ARTICLE',
+      },
       include: {
         category: true,
         author: {
@@ -259,14 +333,25 @@ export const articlesService = {
       },
     });
 
-    return contents.map(content => ({
-      ...content,
-      content: content.body,
-      image: content.featuredImage,
+    return contents.map((content: any) => ({
+      id: content.id,
+      title: content.title,
+      summary: content.summary,
+      content: (content.typeData as any)?.body || '',
+      image: (content.typeData as any)?.featuredImage || null,
+      status: content.status,
+      views: content.views,
+      categoryId: content.categoryId,
+      authorId: content.authorId,
+      createdAt: content.createdAt,
+      updatedAt: content.updatedAt,
       author: {
-        ...content.author,
+        id: content.author.id,
+        name: content.author.name,
+        email: content.author.email,
         avatar: content.author.avatarUrl,
       },
+      category: content.category,
     }));
   },
 };

@@ -6,7 +6,7 @@ const JWT_EXPIRES_IN = '15m';
 const JWT_REFRESH_EXPIRES_IN = '7d';
 
 export interface JWTPayload {
-  userId: number;
+  userId: string;
   email: string;
 }
 

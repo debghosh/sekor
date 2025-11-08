@@ -2,10 +2,10 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Header from './components/common/Header';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ArticleDetailPage from './pages/ArticleDetailPage';
+import HomePage from './pages/reader/HomePage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import ArticleDetailPage from './pages/reader/ArticleDetailPage';
 
 function App() {
   const initialize = useAuthStore((state) => state.initialize);
