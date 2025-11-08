@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { articlesService } from '../services/articlesService';
 import { Article } from '../types/types';
-import ArticleCard from '../components/ArticleCard';
+import ArticleCard from '../components/content/ArticleCard';
 
 const HomePage: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
