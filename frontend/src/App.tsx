@@ -5,6 +5,7 @@ import Header from './components/common/Header';
 import HomePage from './pages/reader/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import SubscribePage from './pages/auth/SubscribePage';
 import ArticleDetailPage from './pages/reader/ArticleDetailPage';
 
 function App() {
@@ -17,12 +18,17 @@ function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white">
-        <Header />
         <Routes>
+          {/* HomePage has its own custom header */}
           <Route path="/" element={<HomePage />} />
+          
+          {/* Auth pages don't need header */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/articles/:id" element={<ArticleDetailPage />} />
+          <Route path="/subscribe" element={<SubscribePage />} />
+          
+          {/* Other pages use the standard Header */}
+          <Route path="/articles/:id" element={<><Header /><ArticleDetailPage /></>} />
         </Routes>
       </div>
     </BrowserRouter>
