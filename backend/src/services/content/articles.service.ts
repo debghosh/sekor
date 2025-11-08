@@ -6,8 +6,8 @@ export interface CreateArticleInput {
   title: string;
   content: string;
   summary?: string;
-  categoryId: number;
-  authorId: number;
+  categoryId: string;
+  authorId: string;
   image?: string;
   status?: 'DRAFT' | 'PUBLISHED';
 }
@@ -16,7 +16,7 @@ export interface UpdateArticleInput {
   title?: string;
   content?: string;
   summary?: string;
-  categoryId?: number;
+  categoryId?: string;
   image?: string;
   status?: 'DRAFT' | 'PUBLISHED';
 }
@@ -25,8 +25,8 @@ export const articlesService = {
   async getAll(options: {
     page?: number;
     limit?: number;
-    categoryId?: number;
-    authorId?: number;
+    categoryId?: string;
+    authorId?: string;
     status?: string;
     search?: string;
   }) {
@@ -49,12 +49,12 @@ export const articlesService = {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
+        { body: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const [articles, total] = await Promise.all([
-      prisma.article.findMany({
+    const [contents, total] = await Promise.all([
+      prisma.content.findMany({
         where,
         skip,
         take: limit,
@@ -64,7 +64,7 @@ export const articlesService = {
               id: true,
               name: true,
               email: true,
-              avatar: true,
+              avatarUrl: true,
             },
           },
           category: true,
@@ -73,8 +73,18 @@ export const articlesService = {
           createdAt: 'desc',
         },
       }),
-      prisma.article.count({ where }),
+      prisma.content.count({ where }),
     ]);
+
+    // Map to match expected Article structure
+    const articles = contents.map(content => ({
+      ...content,
+      content: content.body, // Map body to content
+      author: {
+        ...content.author,
+        avatar: content.author.avatarUrl,
+      },
+    }));
 
     return {
       articles,
@@ -87,8 +97,8 @@ export const articlesService = {
     };
   },
 
-  async getById(id: number) {
-    const article = await prisma.article.findUnique({
+  async getById(id: string) {
+    const content = await prisma.content.findUnique({
       where: { id },
       include: {
         author: {
@@ -97,35 +107,43 @@ export const articlesService = {
             name: true,
             email: true,
             bio: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         category: true,
       },
     });
 
-    if (!article) {
+    if (!content) {
       throw new Error('Article not found');
     }
 
     // Increment view count
-    await prisma.article.update({
+    await prisma.content.update({
       where: { id },
       data: { views: { increment: 1 } },
     });
 
-    return article;
+    // Map to match expected Article structure
+    return {
+      ...content,
+      content: content.body,
+      author: {
+        ...content.author,
+        avatar: content.author.avatarUrl,
+      },
+    };
   },
 
   async create(input: CreateArticleInput) {
-    const article = await prisma.article.create({
+    const content = await prisma.content.create({
       data: {
         title: input.title,
-        content: input.content,
+        body: input.content, // Map content to body
         summary: input.summary,
         categoryId: input.categoryId,
         authorId: input.authorId,
-        image: input.image,
+        featuredImage: input.image,
         status: input.status || 'DRAFT',
       },
       include: {
@@ -134,81 +152,121 @@ export const articlesService = {
             id: true,
             name: true,
             email: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         category: true,
       },
     });
 
-    return article;
+    return {
+      ...content,
+      content: content.body,
+      image: content.featuredImage,
+      author: {
+        ...content.author,
+        avatar: content.author.avatarUrl,
+      },
+    };
   },
 
-  async update(id: number, input: UpdateArticleInput, userId: number) {
-    // Check if article exists and user is the author
-    const existingArticle = await prisma.article.findUnique({
+  async update(id: string, input: UpdateArticleInput, userId: string) {
+    // Check if content exists and user is the author
+    const existingContent = await prisma.content.findUnique({
       where: { id },
     });
 
-    if (!existingArticle) {
+    if (!existingContent) {
       throw new Error('Article not found');
     }
 
-    if (existingArticle.authorId !== userId) {
+    if (existingContent.authorId !== userId) {
       throw new Error('Unauthorized to update this article');
     }
 
-    const article = await prisma.article.update({
+    const updateData: any = {};
+    if (input.title) updateData.title = input.title;
+    if (input.content) updateData.body = input.content;
+    if (input.summary) updateData.summary = input.summary;
+    if (input.categoryId) updateData.categoryId = input.categoryId;
+    if (input.image) updateData.featuredImage = input.image;
+    if (input.status) updateData.status = input.status;
+
+    const content = await prisma.content.update({
       where: { id },
-      data: input,
+      data: updateData,
       include: {
         author: {
           select: {
             id: true,
             name: true,
             email: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         category: true,
       },
     });
 
-    return article;
+    return {
+      ...content,
+      content: content.body,
+      image: content.featuredImage,
+      author: {
+        ...content.author,
+        avatar: content.author.avatarUrl,
+      },
+    };
   },
 
-  async delete(id: number, userId: number) {
-    // Check if article exists and user is the author
-    const existingArticle = await prisma.article.findUnique({
+  async delete(id: string, userId: string) {
+    // Check if content exists and user is the author
+    const existingContent = await prisma.content.findUnique({
       where: { id },
     });
 
-    if (!existingArticle) {
+    if (!existingContent) {
       throw new Error('Article not found');
     }
 
-    if (existingArticle.authorId !== userId) {
+    if (existingContent.authorId !== userId) {
       throw new Error('Unauthorized to delete this article');
     }
 
-    await prisma.article.delete({
+    await prisma.content.delete({
       where: { id },
     });
 
     return { message: 'Article deleted successfully' };
   },
 
-  async getByAuthor(authorId: number) {
-    const articles = await prisma.article.findMany({
+  async getByAuthor(authorId: string) {
+    const contents = await prisma.content.findMany({
       where: { authorId },
       include: {
         category: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    return articles;
+    return contents.map(content => ({
+      ...content,
+      content: content.body,
+      image: content.featuredImage,
+      author: {
+        ...content.author,
+        avatar: content.author.avatarUrl,
+      },
+    }));
   },
 };

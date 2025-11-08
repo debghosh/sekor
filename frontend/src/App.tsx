@@ -1,22 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-function HomePage() {
-  return (
-    <div style={{ padding: '40px', fontFamily: 'system-ui' }}>
-      <h1>শেকড় - The Kolkata Chronicle</h1>
-      <p>Welcome to SEKOR-BKC Production System</p>
-      <p>Status: Running ✅</p>
-    </div>
-  );
-}
+import { useAuthStore } from './store/authStore';
+import Header from './components/Header';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ArticleDetailPage from './pages/ArticleDetailPage';
 
 function App() {
+  const initialize = useAuthStore((state) => state.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-      </Routes>
+      <div className="min-h-screen bg-white">
+        <Header />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/articles/:id" element={<ArticleDetailPage />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }
