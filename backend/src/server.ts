@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.routes';
+import articlesRoutes from './routes/articles.routes';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -29,11 +30,20 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.get('/api/v1', (req, res) => {
-  res.json({ message: 'SEKOR-BKC API v1.0' });
+  res.json({ 
+    message: 'SEKOR-BKC API v1.0',
+    endpoints: {
+      auth: '/api/v1/auth',
+      articles: '/api/v1/articles',
+    }
+  });
 });
 
 // Auth routes
 app.use('/api/v1/auth', authRoutes);
+
+// Articles routes
+app.use('/api/v1/articles', articlesRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -54,6 +64,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/api/v1/auth`);
+  console.log(`📰 Articles API: http://localhost:${PORT}/api/v1/articles`);
 });
 
 // Graceful shutdown
