@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ContentStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -45,7 +45,10 @@ export const articlesService = {
 
     if (categoryId) where.categoryId = categoryId;
     if (authorId) where.authorId = authorId;
-    if (status) where.status = status;
+    //if (status) where.status = status;
+    if (status) {
+      where.status = status.toUpperCase() as ContentStatus;
+    }
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },

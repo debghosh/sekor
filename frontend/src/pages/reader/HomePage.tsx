@@ -97,53 +97,67 @@ const HomePage = () => {
     }
   ];
 
-  // Fetch articles from API
-  useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        setLoading(true);
-        
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const response = await fetch('http://localhost:3001/api/v1/articles?status=published&limit=6', {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch articles');
-        }
-
-        const data = await response.json();
-        
-        // Transform API data to match Story interface
-        const transformedStories = data.articles.map((article: any) => ({
-          id: article.id,
-          title: article.title,
-          excerpt: article.excerpt || article.content.substring(0, 150) + '...',
-          category: article.category?.name || 'Uncategorized',
-          image: article.featuredImage || 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=800',
-          readTime: `${Math.ceil(article.content.split(' ').length / 200)} min read`,
-          views: article.viewCount ? `${article.viewCount} views` : 'New'
-        }));
-
-        setStories(transformedStories);
-        setError(null);
-      } catch (err) {
-        // Silently fall back to sample data
-        console.warn('API not available, using sample data');
-        setStories(sampleStories);
-        setError(null);
-      } finally {
-        setLoading(false);
+ // Fetch articles from API
+useEffect(() => {
+  const fetchStories = async () => {
+    try {
+      setLoading(true);
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch('http://localhost:3001/api/v1/articles?status=PUBLISHED&limit=6', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch articles');
       }
-    };
 
-    fetchStories();
-  }, []);
+      const data = await response.json();
+
+      // ADD THIS DIAGNOSTIC
+console.log('API Response:', data);
+console.log('data.data exists?', data.data);
+console.log('data.articles exists?', data.articles);
+      
+      // Transform API data to match Story interface
+      const transformedStories = data.data.map((article: any) => ({
+        id: article.id,
+        title: article.title,
+        excerpt: article.summary || article.content.substring(0, 150) + '...',
+        category: article.category?.name || 'Uncategorized',
+        image: article.image || 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=800',
+        readTime: `${Math.ceil((article.content?.split(' ').length || 0) / 200)} min read`,
+        views: article.views ? `${article.views} views` : 'New'
+      }));
+
+      setStories(transformedStories);
+      setError(null);
+    } catch (err) {
+  // Diagnostic logging
+  console.error('Fetch error details:', {
+    error: err,
+    message: err instanceof Error ? err.message : 'Unknown error',
+    name: err instanceof Error ? err.name : 'Unknown',
+    stack: err instanceof Error ? err.stack : undefined
+  });
+  
+  // Silently fall back to sample data
+  console.warn('API not available, using sample data');
+  setStories(sampleStories);
+  setError(null);
+} finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStories();
+}, []);
+
 
   // Auto-advance carousel
   useEffect(() => {
