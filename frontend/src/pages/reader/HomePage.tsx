@@ -1,138 +1,150 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { articlesService } from '../../services/articlesService';
+import { Article } from '../../types/types';
 import '../../styles/homePage.css';
-
-interface Author {
-  name: string;
-  avatar: string;
-}
-
-interface Story {
-  id: number;
-  title: string;
-  excerpt: string;
-  category: string;
-  image: string;
-  readTime: string;
-  views: string;
-  author: Author;
-  date: string;
-  saved?: boolean;
-  following?: boolean;
-}
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [stories, setStories] = useState<Story[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [savedTags, setSavedTags] = useState<string[]>(['Must Read']);
   const [tagInput, setTagInput] = useState('');
+  const [followedAuthors, setFollowedAuthors] = useState<Set<number>>(new Set());
+  const [savedArticles, setSavedArticles] = useState<Set<number>>(new Set());
 
+  // Hero carousel - TODO: Fetch from API or CMS
   const carouselSlides = [
     {
       image: 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=1200',
       category: 'Heritage',
-      title: 'জোড়াসাঁকো: ঠাকুরবাড়ির ইতিহাস',
-      excerpt: 'কলকাতার হৃদয়ে লুকিয়ে থাকা সাংস্কৃতিক ঐতিহ্যের গল্প'
-    }
-  ];
-
-  // Sample data with actual authors
-  const sampleStories: Story[] = [
-    {
-      id: 1,
-      title: 'The Resurrection of Park Street\'s Colonial Architecture',
-      excerpt: 'How conservation efforts are bringing new life to Kolkata\'s iconic colonial buildings while preserving their historical essence.',
-      category: 'HERITAGE',
-      image: 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=800',
-      readTime: '1 min read',
-      views: '89',
-      author: { name: 'Priya Chatterjee', avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Priya' },
-      date: 'Oct 14'
-    },
-    {
-      id: 2,
-      title: 'আড্ডা in the Digital Age: Can WhatsApp Replace the Chai Shop?',
-      excerpt: 'Exploring how Kolkata\'s beloved tradition of casual conversation is adapting to modern technology.',
-      category: 'আড্ডা',
-      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800',
-      readTime: '1 min read',
-      views: '234',
-      author: { name: 'Arnab Sen', avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Arnab' },
-      date: 'Oct 13'
+      title: 'মর্নিং ব্রিফ',
+      excerpt: 'Everything you need to know about Kolkata today. Your 5-minute companion before the first cup of cha.'
     }
   ];
 
   useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        // TODO: Replace with actual API call
-        // const response = await articlesService.getAll();
-        // setStories(response);
-        
-        // For now, use sample data
-        setStories(sampleStories);
-      } catch (err) {
-        console.error('Error fetching stories:', err);
-        setStories(sampleStories);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStories();
+    fetchArticles();
+    loadSavedState();
   }, []);
 
-  // Filter stories by tab
-  const getFilteredStories = () => {
-    switch(activeTab) {
-      case 'following':
-        return stories.filter(s => s.following);
-      case 'saved':
-        return stories.filter(s => s.saved);
-      case 'for-you':
-        // TODO: Implement recommendation logic
-        return stories;
-      default:
-        return stories;
+  useEffect(() => {
+    // Auto-advance carousel
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await articlesService.getAll({
+        page: 1,
+        limit: 20,
+        // Only get published articles
+      });
+      setArticles(response.data);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      setError('Failed to load articles. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleFollow = (e: React.MouseEvent, storyId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setStories(stories.map(s => 
-      s.id === storyId ? { ...s, following: !s.following } : s
-    ));
+  const loadSavedState = () => {
+    // Load from localStorage
+    const savedFollowing = localStorage.getItem('followedAuthors');
+    const savedArticleIds = localStorage.getItem('savedArticles');
+    
+    if (savedFollowing) {
+      setFollowedAuthors(new Set(JSON.parse(savedFollowing)));
+    }
+    if (savedArticleIds) {
+      setSavedArticles(new Set(JSON.parse(savedArticleIds)));
+    }
   };
 
-  const handleSave = (e: React.MouseEvent, story: Story) => {
+  const saveState = (key: string, value: Set<number>) => {
+    localStorage.setItem(key, JSON.stringify(Array.from(value)));
+  };
+
+  // Filter articles by tab
+  const getFilteredArticles = () => {
+    switch(activeTab) {
+      case 'following':
+        return articles.filter(a => followedAuthors.has(a.authorId));
+      case 'saved':
+        return articles.filter(a => savedArticles.has(a.id));
+      case 'heritage':
+        return articles.filter(a => a.category.slug === 'heritage');
+      case 'food':
+        return articles.filter(a => a.category.slug === 'food' || a.category.slug === 'maach-bhaat');
+      case 'culture':
+        return articles.filter(a => a.category.slug === 'culture' || a.category.slug === 'songskriti');
+      case 'adda':
+        return articles.filter(a => a.category.slug === 'adda');
+      case 'metro':
+        return articles.filter(a => a.category.slug === 'metro');
+      case 'for-you':
+        // TODO: Implement recommendation algorithm
+        return articles;
+      default:
+        return articles;
+    }
+  };
+
+  const handleFollow = (e: React.MouseEvent, authorId: number) => {
     e.preventDefault();
     e.stopPropagation();
-    setSelectedStory(story);
+    
+    const newFollowed = new Set(followedAuthors);
+    if (newFollowed.has(authorId)) {
+      newFollowed.delete(authorId);
+    } else {
+      newFollowed.add(authorId);
+    }
+    setFollowedAuthors(newFollowed);
+    saveState('followedAuthors', newFollowed);
+  };
+
+  const handleSave = (e: React.MouseEvent, article: Article) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedArticle(article);
     setSaveModalOpen(true);
     setSavedTags(['Must Read']); // Reset tags
     setTagInput('');
   };
 
   const completeSave = () => {
-    if (selectedStory) {
-      setStories(stories.map(s => 
-        s.id === selectedStory.id ? { ...s, saved: true } : s
-      ));
-      console.log('Story saved with tags:', savedTags);
+    if (selectedArticle) {
+      const newSaved = new Set(savedArticles);
+      newSaved.add(selectedArticle.id);
+      setSavedArticles(newSaved);
+      saveState('savedArticles', newSaved);
+      
+      // TODO: Send to backend API
+      console.log('Article saved with tags:', {
+        articleId: selectedArticle.id,
+        tags: savedTags
+      });
     }
     setSaveModalOpen(false);
-    setSelectedStory(null);
+    setSelectedArticle(null);
   };
 
-  const handleFavorite = (e: React.MouseEvent, storyId: number) => {
+  const handleFavorite = (e: React.MouseEvent, articleId: number) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Favorite toggled for story:', storyId);
+    // TODO: Implement favorite functionality
+    console.log('Favorite toggled for article:', articleId);
   };
 
   const addTag = (tag: string) => {
@@ -154,7 +166,44 @@ const HomePage = () => {
     }
   };
 
-  const displayedStories = getFilteredStories();
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const calculateReadTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const words = content.split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
+  };
+
+  const displayedArticles = getFilteredArticles();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner" />
+        <p>Loading articles...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <h2>Error loading articles</h2>
+        <p>{error}</p>
+        <button onClick={fetchArticles}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="home-page">
@@ -194,9 +243,11 @@ const HomePage = () => {
         <section className="hero-carousel">
           <div className="hero-carousel__slide" style={{ backgroundImage: `url(${carouselSlides[currentSlide].image})` }}>
             <div className="hero-carousel__content">
-              <span className="hero-carousel__date">Thursday, October 16, 2025 • 7:30 AM</span>
-              <h1 className="hero-carousel__title">মর্নিং ব্রিফ</h1>
-              <p className="hero-carousel__text">Everything you need to know about Kolkata today. Your 5-minute companion before the first cup of cha.</p>
+              <span className="hero-carousel__date">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </span>
+              <h1 className="hero-carousel__title">{carouselSlides[currentSlide].title}</h1>
+              <p className="hero-carousel__text">{carouselSlides[currentSlide].excerpt}</p>
               <div className="hero-carousel__actions">
                 <button className="hero-carousel__btn hero-carousel__btn--primary">📄 Read Brief (5 min)</button>
                 <button className="hero-carousel__btn hero-carousel__btn--secondary">🎧 Listen to Podcast (2 min)</button>
@@ -208,49 +259,58 @@ const HomePage = () => {
 
       {/* Stories Grid */}
       <section className="stories-section">
-        {displayedStories.length === 0 ? (
+        {displayedArticles.length === 0 ? (
           <div className="empty-state">
-            <h3>No stories found</h3>
+            <h3>No articles found</h3>
             <p>
               {activeTab === 'following' && 'Start following authors to see their stories here.'}
-              {activeTab === 'saved' && 'Save stories to read them later.'}
+              {activeTab === 'saved' && 'Save articles to read them later.'}
+              {activeTab === 'home' && 'No articles available yet.'}
             </p>
           </div>
         ) : (
           <div className="stories-section__grid">
-            {displayedStories.map((story) => (
-              <div key={story.id} className="story-card-wrapper">
-                <Link to={`/articles/${story.id}`} className="story-card">
+            {displayedArticles.map((article) => (
+              <div key={article.id} className="story-card-wrapper">
+                <Link to={`/articles/${article.id}`} className="story-card">
                   <div className="story-card__image-container">
-                    <img src={story.image} alt={story.title} className="story-card__image" />
-                    <button className="story-card__favorite" onClick={(e) => handleFavorite(e, story.id)}>
+                    <img 
+                      src={article.image || 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=800'} 
+                      alt={article.title} 
+                      className="story-card__image" 
+                    />
+                    <button className="story-card__favorite" onClick={(e) => handleFavorite(e, article.id)}>
                       ❤️
                     </button>
                   </div>
                   <div className="story-card__content">
                     <div className="story-card__author">
-                      <img src={story.author.avatar} alt={story.author.name} className="story-card__author-avatar" />
+                      <img 
+                        src={article.author.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${article.author.name}`} 
+                        alt={article.author.name} 
+                        className="story-card__author-avatar" 
+                      />
                       <div className="story-card__author-info">
-                        <span className="story-card__author-name">{story.author.name}</span>
-                        <span className="story-card__date">• {story.date}</span>
+                        <span className="story-card__author-name">{article.author.name}</span>
+                        <span className="story-card__date">• {formatDate(article.createdAt)}</span>
                       </div>
                       <button 
-                        className={`story-card__follow-btn ${story.following ? 'following' : ''}`}
-                        onClick={(e) => handleFollow(e, story.id)}
+                        className={`story-card__follow-btn ${followedAuthors.has(article.authorId) ? 'following' : ''}`}
+                        onClick={(e) => handleFollow(e, article.authorId)}
                       >
-                        {story.following ? 'Following' : '+ Follow'}
+                        {followedAuthors.has(article.authorId) ? 'Following' : '+ Follow'}
                       </button>
                     </div>
-                    <div className="story-card__category-tag">{story.category}</div>
-                    <h3 className="story-card__title">{story.title}</h3>
-                    <p className="story-card__excerpt">{story.excerpt}</p>
+                    <div className="story-card__category-tag">{article.category.name}</div>
+                    <h3 className="story-card__title">{article.title}</h3>
+                    <p className="story-card__excerpt">{article.summary || article.content.substring(0, 150) + '...'}</p>
                     <div className="story-card__footer">
                       <div className="story-card__meta">
-                        <span>📖 {story.readTime}</span>
-                        <span>💬 {story.views}</span>
+                        <span>📖 {calculateReadTime(article.content)}</span>
+                        <span>💬 {article.views}</span>
                       </div>
-                      <button className="story-card__save-btn" onClick={(e) => handleSave(e, story)}>
-                        {story.saved ? '✓ Saved' : '🔖 Save'}
+                      <button className="story-card__save-btn" onClick={(e) => handleSave(e, article)}>
+                        {savedArticles.has(article.id) ? '✓ Saved' : '🔖 Save'}
                       </button>
                     </div>
                   </div>
@@ -262,14 +322,14 @@ const HomePage = () => {
       </section>
 
       {/* Save Modal */}
-      {saveModalOpen && selectedStory && (
+      {saveModalOpen && selectedArticle && (
         <div className="modal-overlay" onClick={() => setSaveModalOpen(false)}>
           <div className="save-modal" onClick={(e) => e.stopPropagation()}>
             <div className="save-modal__header">
               <h2>Save Story</h2>
               <button onClick={() => setSaveModalOpen(false)}>✕</button>
             </div>
-            <h3 className="save-modal__story-title">{selectedStory.title}</h3>
+            <h3 className="save-modal__story-title">{selectedArticle.title}</h3>
             <div className="save-modal__tags">
               <label>Add Tags</label>
               <div className="save-modal__selected-tags">
