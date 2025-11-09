@@ -293,3 +293,17 @@ select.form-input {
     padding: 10px 12px;
   }
 }
+
+/* Error state styles */
+.info-box--error {
+  background: #fee;
+  border-left: 4px solid #e74c3c;
+  color: #c0392b;
+}
+
+.form-helper-text {
+  color: var(--text-medium);
+  font-size: 0.85em;
+  margin-top: 4px;
+  display: block;
+}

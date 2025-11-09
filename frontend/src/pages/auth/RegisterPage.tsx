@@ -111,12 +111,7 @@ const RegisterPage = () => {
         <p className="login-subtitle">Join The Kolkata Chronicle</p>
 
         {error && (
-          <div className="info-box" style={{ 
-            background: '#fee', 
-            borderLeft: '4px solid #e74c3c',
-            color: '#c0392b',
-            marginBottom: '20px'
-          }}>
+          <div className="info-box info-box--error">
             {error}
           </div>
         )}
@@ -166,7 +161,7 @@ const RegisterPage = () => {
               disabled={loading}
               minLength={8}
             />
-            <small style={{ color: 'var(--text-medium)', fontSize: '0.85em', marginTop: '4px', display: 'block' }}>
+            <small className="form-helper-text">
               Must be at least 8 characters
             </small>
           </div>

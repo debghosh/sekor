@@ -318,3 +318,141 @@
     flex-direction: column;
   }
 }
+
+/* Success/Confirmation Page Styles */
+.success-container {
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.success-icon {
+  font-size: 5em;
+  margin-bottom: 24px;
+}
+
+.success-title {
+  font-size: 2em;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+  font-family: 'Playfair Display', serif;
+}
+
+.success-description {
+  color: var(--text-medium);
+  font-size: 1.1em;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.success-description strong {
+  color: var(--primary);
+}
+
+.email-preview {
+  background: #f8f9fa;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 32px;
+  text-align: left;
+}
+
+.email-preview__title {
+  font-size: 1.2em;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.email-preview__content {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.email-preview__header {
+  font-size: 0.9em;
+  color: var(--text-medium);
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 12px;
+}
+
+.email-preview__header strong {
+  display: inline-block;
+  min-width: 60px;
+}
+
+.email-preview__body {
+  padding: 20px 0;
+}
+
+.email-preview__heading {
+  font-size: 1.3em;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.email-preview__text {
+  font-size: 1em;
+  color: var(--text-dark);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.email-preview__button-container {
+  text-align: center;
+  margin: 32px 0;
+}
+
+.email-preview__button {
+  display: inline-block;
+  padding: 16px 40px;
+  background: #DC143C;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.1em;
+  box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+  transition: all 0.2s;
+}
+
+.email-preview__button:hover {
+  background: #b8112e;
+  transform: translateY(-2px);
+}
+
+.email-preview__footer {
+  font-size: 0.85em;
+  color: var(--text-light);
+  margin-top: 24px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.success-note {
+  font-size: 0.85em;
+  color: var(--text-medium);
+  margin-top: 16px;
+  text-align: center;
+  font-style: italic;
+}
+
+.success-back-link {
+  margin-top: 40px;
+}
+
+.success-back-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1em;
+}
+
+.success-back-link a:hover {
+  text-decoration: underline;
+}

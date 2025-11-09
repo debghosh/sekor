@@ -64,69 +64,57 @@ const SubscribePage = () => {
     return (
       <div className="subscribe-container">
         <div className="subscribe-card">
-          <div style={{ textAlign: 'center', padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-            <div style={{ fontSize: '5em', marginBottom: '24px' }}>📧</div>
-            <h2 style={{ fontSize: '2em', marginBottom: '16px', color: 'var(--text-dark)', fontFamily: "'Playfair Display', serif" }}>
+          <div className="success-container">
+            <div className="success-icon">📧</div>
+            <h2 className="success-title">
               Check Your Email!
             </h2>
-            <p style={{ color: 'var(--text-medium)', fontSize: '1.1em', lineHeight: '1.6', marginBottom: '24px' }}>
-              We've sent a confirmation email to <strong style={{ color: 'var(--primary)' }}>{formData.email}</strong><br />
+            <p className="success-description">
+              We've sent a confirmation email to <strong>{formData.email}</strong><br />
               Click the link in the email to confirm your subscription and set up your account.
             </p>
 
             {/* Email Preview */}
-            <div style={{ background: '#f8f9fa', border: '2px dashed #e0e0e0', borderRadius: '12px', padding: '30px', marginTop: '32px', textAlign: 'left' }}>
-              <h3 style={{ fontSize: '1.2em', marginBottom: '16px', color: 'var(--text-dark)', textAlign: 'center' }}>
+            <div className="email-preview">
+              <h3 className="email-preview__title">
                 📬 Email Preview (Demo Only)
               </h3>
-              <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <p style={{ fontSize: '0.9em', color: 'var(--text-medium)', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '12px' }}>
+              <div className="email-preview__content">
+                <p className="email-preview__header">
                   <strong>From:</strong> Kolkata Chronicle &lt;hello@kolkatachronicle.com&gt;<br />
                   <strong>To:</strong> {formData.email}<br />
                   <strong>Subject:</strong> Confirm your subscription to শেকড়
                 </p>
-                <div style={{ padding: '20px 0' }}>
-                  <h4 style={{ fontSize: '1.3em', marginBottom: '16px', color: 'var(--text-dark)' }}>
+                <div className="email-preview__body">
+                  <h4 className="email-preview__heading">
                     Welcome to The Kolkata Chronicle!
                   </h4>
-                  <p style={{ fontSize: '1em', color: 'var(--text-dark)', marginBottom: '24px', lineHeight: '1.6' }}>
+                  <p className="email-preview__text">
                     Thanks for subscribing! We're excited to have you as part of our community.
                   </p>
-                  <p style={{ fontSize: '1em', color: 'var(--text-dark)', marginBottom: '24px', lineHeight: '1.6' }}>
+                  <p className="email-preview__text">
                     Click the button below to confirm your subscription and set up your account:
                   </p>
-                  <div style={{ textAlign: 'center', margin: '32px 0' }}>
+                  <div className="email-preview__button-container">
                     <a 
                       href={confirmUrl}
-                      style={{ 
-                        display: 'inline-block', 
-                        padding: '16px 40px', 
-                        background: '#DC143C', 
-                        color: 'white', 
-                        textDecoration: 'none', 
-                        borderRadius: '8px', 
-                        fontWeight: 600, 
-                        fontSize: '1.1em',
-                        boxShadow: '0 4px 12px rgba(220, 20, 60, 0.3)'
-                      }}
+                      className="email-preview__button"
                     >
                       ✓ Confirm My Subscription
                     </a>
                   </div>
-                  <p style={{ fontSize: '0.85em', color: 'var(--text-light)', marginTop: '24px', textAlign: 'center', lineHeight: '1.5' }}>
+                  <p className="email-preview__footer">
                     This link is valid for 48 hours. If you didn't subscribe to The Kolkata Chronicle, you can safely ignore this email.
                   </p>
                 </div>
               </div>
             </div>
-            <p style={{ fontSize: '0.85em', color: 'var(--text-medium)', marginTop: '16px', textAlign: 'center', fontStyle: 'italic' }}>
+            <p className="success-note">
               ⬆️ In production, this email would be sent to your inbox. For now, click the button above to continue.
             </p>
 
-            <div style={{ marginTop: '40px' }}>
-              <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600, fontSize: '1em' }}>
-                ← Back to Home
-              </Link>
+            <div className="success-back-link">
+              <Link to="/">← Back to Home</Link>
             </div>
           </div>
         </div>
