@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { articlesService } from '../../services/articlesService';
+import '../../styles/articleDetail.css';
 
 interface Article {
   id: string;

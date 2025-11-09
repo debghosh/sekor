@@ -21,7 +21,6 @@ function App() {
         <Routes>
           {/* HomePage has its own custom header */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/home" element={<HomePage />} />
           
           {/* Auth pages don't need header */}
           <Route path="/login" element={<LoginPage />} />
