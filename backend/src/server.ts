@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.routes';
 import articlesRoutes from './routes/articles.routes';
+import authorsRoutes from './routes/authors.routes';
+import followsRouter from './routes/follows';
+//import userInteractionsRoutes from './routes/userInteractions.routes';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -35,15 +38,27 @@ app.get('/api/v1', (req, res) => {
     endpoints: {
       auth: '/api/v1/auth',
       articles: '/api/v1/articles',
+      authors: '/api/v1/authors',
     }
   });
 });
 
 // Auth routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes); 
 
 // Articles routes
 app.use('/api/v1/articles', articlesRoutes);
+
+// Authors routes
+app.use('/api/v1/authors', authorsRoutes);
+
+app.use('/api/v1/follows', followsRouter);
+
+//app.use('/api/follows', followsRouter);
+
+// User interactions routes
+//app.use('/api/v1/interactions', userInteractionsRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -47,7 +47,7 @@ export const authService = {
     const user = await prisma.user.create({
       data: {
         email: email.toLowerCase(),
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         name,
       },
       select: {
@@ -83,7 +83,7 @@ export const authService = {
     }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, user.password);
+    const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
       throw new Error('Invalid email or password');
     }
@@ -113,7 +113,7 @@ export const authService = {
         email: true,
         name: true,
         bio: true,
-        avatar: true,
+        avatarUrl: true,
         role: true,
         createdAt: true,
       },

@@ -12,7 +12,7 @@ interface RegisterFormData {
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { register, isLoading } = useAuthStore();
   const [formData, setFormData] = useState<RegisterFormData>({
     name: '',
     email: '',
@@ -20,14 +20,13 @@ const RegisterPage = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
-    setError(''); // Clear error on input change
+    setError('');
   };
 
   const validateForm = (): boolean => {
@@ -46,7 +45,6 @@ const RegisterPage = () => {
       return false;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
@@ -63,43 +61,13 @@ const RegisterPage = () => {
       return;
     }
 
-    setLoading(true);
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Login expects (user, accessToken) - only 2 arguments
-      // Store refreshToken separately if needed
-      if (data.refreshToken) {
-        localStorage.setItem('refreshToken', data.refreshToken);
-      }
-
-      // Call login with exactly 2 arguments
-      login(data.user, data.accessToken);
-
-      // Redirect to home
-      navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+      await register(formData.email, formData.password, formData.name);
+      navigate('/home');
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Registration failed. Please try again.');
     }
   };
 
@@ -108,7 +76,7 @@ const RegisterPage = () => {
       <div className="login-card">
         <div className="login-logo">শেকড়</div>
         <h1 className="login-title">Create Account</h1>
-        <p className="login-subtitle">Join The Kolkata Chronicle</p>
+        <p className="login-subtitle">Join The Kolkata Chronicle community</p>
 
         {error && (
           <div className="info-box info-box--error">
@@ -120,79 +88,75 @@ const RegisterPage = () => {
           <div className="form-group">
             <label className="form-label" htmlFor="name">Full Name</label>
             <input
-              type="text"
               id="name"
               name="name"
+              type="text"
               className="form-input"
-              placeholder="Amit Kumar"
               value={formData.name}
               onChange={handleChange}
+              placeholder="Enter your full name"
+              disabled={isLoading}
               required
-              disabled={loading}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email Address</label>
+            <label className="form-label" htmlFor="email">Email</label>
             <input
-              type="email"
               id="email"
               name="email"
+              type="email"
               className="form-input"
-              placeholder="your@email.com"
               value={formData.email}
               onChange={handleChange}
+              placeholder="your@email.com"
+              disabled={isLoading}
               required
-              disabled={loading}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
             <input
-              type="password"
               id="password"
               name="password"
+              type="password"
               className="form-input"
-              placeholder="Create a strong password"
               value={formData.password}
               onChange={handleChange}
+              placeholder="At least 8 characters"
+              disabled={isLoading}
               required
-              disabled={loading}
-              minLength={8}
             />
-            <small className="form-helper-text">
-              Must be at least 8 characters
-            </small>
+            <span className="form-helper-text">Must be at least 8 characters long</span>
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
             <input
-              type="password"
               id="confirmPassword"
               name="confirmPassword"
+              type="password"
               className="form-input"
-              placeholder="Re-enter your password"
               value={formData.confirmPassword}
               onChange={handleChange}
+              placeholder="Re-enter your password"
+              disabled={isLoading}
               required
-              disabled={loading}
             />
           </div>
 
           <button 
             type="submit" 
             className="btn-primary"
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
         <div className="signup-prompt">
-          <p><strong>Already have an account?</strong></p>
-          <Link to="/login" className="btn-secondary">Sign In</Link>
+          <p>Already have an account? <Link to="/login">Sign in</Link></p>
         </div>
 
         <div className="back-link">

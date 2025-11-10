@@ -1,6 +1,8 @@
 import api from './api';
 import { Article, ArticlesResponse } from '../types/types';
 
+const API_URL = 'http://localhost:3001/api/v1/articles';
+
 export const articlesService = {
   async getAll(params?: {
     page?: number;

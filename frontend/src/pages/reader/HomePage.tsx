@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 import { articlesService } from '../../services/articlesService';
+import { authorsService, Author } from '../../services/authorsService';
+import { followAuthor, unfollowAuthor, getFollowedAuthors } from '../../services/api';
 import { Article } from '../../types/types';
+import AuthorCard from '../../components/AuthorCard';
 import '../../styles/homePage.css';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  
   const [activeTab, setActiveTab] = useState('home');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -14,8 +21,10 @@ const HomePage = () => {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [savedTags, setSavedTags] = useState<string[]>(['Must Read']);
   const [tagInput, setTagInput] = useState('');
-  const [followedAuthors, setFollowedAuthors] = useState<Set<number>>(new Set());
+  const [followedAuthors, setFollowedAuthors] = useState<Set<string>>(new Set());
   const [savedArticles, setSavedArticles] = useState<Set<number>>(new Set());
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [authorsLoading, setAuthorsLoading] = useState(false);
 
   // Hero carousel - TODO: Fetch from API or CMS
   const carouselSlides = [
@@ -27,10 +36,20 @@ const HomePage = () => {
     }
   ];
 
+  // Redirect to landing if not authenticated
   useEffect(() => {
-    fetchArticles();
-    loadSavedState();
-  }, []);
+    if (!isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchArticles();
+      loadSavedState();
+      loadFollowedAuthorsFromBackend();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Auto-advance carousel
@@ -40,6 +59,22 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Effect to fetch authors when Following tab is activated
+  useEffect(() => {
+    if (activeTab === 'following' && isAuthenticated) {
+      fetchAuthors();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  const loadFollowedAuthorsFromBackend = async () => {
+    try {
+      const ids = await getFollowedAuthors();
+      setFollowedAuthors(new Set(ids));
+    } catch (error) {
+      console.error('Failed to load followed authors from backend', error);
+    }
+  };
+
   const fetchArticles = async () => {
     try {
       setLoading(true);
@@ -47,7 +82,6 @@ const HomePage = () => {
       const response = await articlesService.getAll({
         page: 1,
         limit: 20,
-        // Only get published articles
       });
       setArticles(response.data);
     } catch (err) {
@@ -59,27 +93,50 @@ const HomePage = () => {
   };
 
   const loadSavedState = () => {
-    // Load from localStorage
-    const savedFollowing = localStorage.getItem('followedAuthors');
     const savedArticleIds = localStorage.getItem('savedArticles');
     
-    if (savedFollowing) {
-      setFollowedAuthors(new Set(JSON.parse(savedFollowing)));
-    }
     if (savedArticleIds) {
       setSavedArticles(new Set(JSON.parse(savedArticleIds)));
     }
   };
 
-  const saveState = (key: string, value: Set<number>) => {
-    localStorage.setItem(key, JSON.stringify(Array.from(value)));
+  const saveState = (key: string, value: Set<number> | Set<string>) => {
+    localStorage.setItem(key, JSON.stringify(Array.from(value as any)));
   };
 
-  // Filter articles by tab
+  const fetchAuthors = async () => {
+    try {
+      setAuthorsLoading(true);
+      const response = await authorsService.getFollowing({
+        page: 1,
+        limit: 20,
+      });
+      setAuthors(response.data);
+    } catch (err) {
+      console.error('Error fetching authors:', err);
+      setAuthors([]);
+    } finally {
+      setAuthorsLoading(false);
+    }
+  };
+
+  const handleAuthorFollowToggle = async (authorId: string, isCurrentlyFollowing: boolean) => {
+    try {
+      if (isCurrentlyFollowing) {
+        await authorsService.unfollow(authorId);
+      } else {
+        await authorsService.follow(authorId);
+      }
+      fetchAuthors();
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
+
   const getFilteredArticles = () => {
     switch(activeTab) {
       case 'following':
-        return articles.filter(a => followedAuthors.has(a.authorId));
+        return articles.filter(a => followedAuthors.has(String(a.authorId)));
       case 'saved':
         return articles.filter(a => savedArticles.has(a.id));
       case 'heritage':
@@ -93,25 +150,36 @@ const HomePage = () => {
       case 'metro':
         return articles.filter(a => a.category.slug === 'metro');
       case 'for-you':
-        // TODO: Implement recommendation algorithm
         return articles;
       default:
         return articles;
     }
   };
 
-  const handleFollow = (e: React.MouseEvent, authorId: number) => {
+  const handleFollow = async (e: React.MouseEvent, authorId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const newFollowed = new Set(followedAuthors);
-    if (newFollowed.has(authorId)) {
-      newFollowed.delete(authorId);
-    } else {
-      newFollowed.add(authorId);
+
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
     }
-    setFollowedAuthors(newFollowed);
-    saveState('followedAuthors', newFollowed);
+
+    try {
+      if (followedAuthors.has(authorId)) {
+        await unfollowAuthor(authorId);
+        const newFollowed = new Set(followedAuthors);
+        newFollowed.delete(authorId);
+        setFollowedAuthors(newFollowed);
+      } else {
+        await followAuthor(authorId);
+        const newFollowed = new Set(followedAuthors);
+        newFollowed.add(authorId);
+        setFollowedAuthors(newFollowed);
+      }
+    } catch (error) {
+      console.error('Failed to update follow status', error);
+    }
   };
 
   const handleSave = (e: React.MouseEvent, article: Article) => {
@@ -119,7 +187,7 @@ const HomePage = () => {
     e.stopPropagation();
     setSelectedArticle(article);
     setSaveModalOpen(true);
-    setSavedTags(['Must Read']); // Reset tags
+    setSavedTags(['Must Read']);
     setTagInput('');
   };
 
@@ -129,12 +197,6 @@ const HomePage = () => {
       newSaved.add(selectedArticle.id);
       setSavedArticles(newSaved);
       saveState('savedArticles', newSaved);
-      
-      // TODO: Send to backend API
-      console.log('Article saved with tags:', {
-        articleId: selectedArticle.id,
-        tags: savedTags
-      });
     }
     setSaveModalOpen(false);
     setSelectedArticle(null);
@@ -143,14 +205,12 @@ const HomePage = () => {
   const handleFavorite = (e: React.MouseEvent, articleId: number) => {
     e.preventDefault();
     e.stopPropagation();
-    // TODO: Implement favorite functionality
-    console.log('Favorite toggled for article:', articleId);
+    console.log('Favorite article:', articleId);
   };
 
   const addTag = (tag: string) => {
-    const trimmedTag = tag.trim();
-    if (trimmedTag && !savedTags.includes(trimmedTag)) {
-      setSavedTags([...savedTags, trimmedTag]);
+    if (!savedTags.includes(tag)) {
+      setSavedTags([...savedTags, tag]);
     }
   };
 
@@ -160,21 +220,13 @@ const HomePage = () => {
 
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      addTag(tagInput);
+      addTag(tagInput.trim());
       setTagInput('');
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const calculateReadTime = (content: string) => {
@@ -184,40 +236,38 @@ const HomePage = () => {
     return `${minutes} min read`;
   };
 
-  const displayedArticles = getFilteredArticles();
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-        <p>Loading articles...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        <h2>Error loading articles</h2>
-        <p>{error}</p>
-        <button onClick={fetchArticles}>Retry</button>
-      </div>
-    );
-  }
+  const displayedArticles = loading ? [] : getFilteredArticles();
 
   return (
     <div className="home-page">
       {/* Header */}
       <header className="home-header">
         <div className="home-header__container">
-          <Link to="/" className="home-header__logo">
+          <Link to="/home" className="home-header__logo">
             শেকড় - The Kolkata Chronicle
           </Link>
           <div className="home-header__actions">
             <span className="home-header__language">কলকাতা ক্রনিকেল</span>
-            <div className="home-header__user">D</div>
-            <span className="home-header__username">D</span>
-            <button className="home-header__logout">Logout</button>
+            {user && (
+              <>
+                <div className="home-header__user">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} />
+                  ) : (
+                    user.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <span className="home-header__username">{user.name}</span>
+              </>
+            )}
+            <button className="home-header__logout" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         </div>
       </header>
@@ -257,20 +307,42 @@ const HomePage = () => {
         </section>
       )}
 
-      {/* Stories Grid */}
+      {/* Stories Grid / Authors Grid */}
       <section className="stories-section">
-        {displayedArticles.length === 0 ? (
-          <div className="empty-state">
-            <h3>No articles found</h3>
-            <p>
-              {activeTab === 'following' && 'Start following authors to see their stories here.'}
-              {activeTab === 'saved' && 'Save articles to read them later.'}
-              {activeTab === 'home' && 'No articles available yet.'}
-            </p>
-          </div>
+        {activeTab === 'following' ? (
+          authorsLoading ? (
+            <div className="loading-container">
+              <div className="loading-spinner" />
+              <p>Loading authors...</p>
+            </div>
+          ) : authors.length === 0 ? (
+            <div className="empty-state">
+              <h3>No authors followed</h3>
+              <p>Start following authors to see them here.</p>
+            </div>
+          ) : (
+            <div className="authors-section__grid">
+              {authors.map((author) => (
+                <AuthorCard
+                  key={author.id}
+                  author={author}
+                  onFollowToggle={handleAuthorFollowToggle}
+                />
+              ))}
+            </div>
+          )
         ) : (
-          <div className="stories-section__grid">
-            {displayedArticles.map((article) => (
+          displayedArticles.length === 0 ? (
+            <div className="empty-state">
+              <h3>No articles found</h3>
+              <p>
+                {activeTab === 'saved' && 'Save articles to read them later.'}
+                {activeTab === 'home' && 'No articles available yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="stories-section__grid">
+              {displayedArticles.map((article: Article) => (
               <div key={article.id} className="story-card-wrapper">
                 <Link to={`/articles/${article.id}`} className="story-card">
                   <div className="story-card__image-container">
@@ -295,10 +367,10 @@ const HomePage = () => {
                         <span className="story-card__date">• {formatDate(article.createdAt)}</span>
                       </div>
                       <button 
-                        className={`story-card__follow-btn ${followedAuthors.has(article.authorId) ? 'following' : ''}`}
-                        onClick={(e) => handleFollow(e, article.authorId)}
+                        className={`story-card__follow-btn ${followedAuthors.has(String(article.authorId)) ? 'following' : ''}`}
+                        onClick={(e) => handleFollow(e, String(article.authorId))}
                       >
-                        {followedAuthors.has(article.authorId) ? 'Following' : '+ Follow'}
+                        {followedAuthors.has(String(article.authorId)) ? 'Following' : '+ Follow'}
                       </button>
                     </div>
                     <div className="story-card__category-tag">{article.category.name}</div>
@@ -317,7 +389,8 @@ const HomePage = () => {
                 </Link>
               </div>
             ))}
-          </div>
+            </div>
+          )
         )}
       </section>
 

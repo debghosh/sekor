@@ -1,6 +1,8 @@
 import api from './api';
 import { AuthResponse, User } from '../types/types';
 
+const API_URL = 'http://localhost:3001/api/v1/auth';
+
 export const authService = {
   async register(email: string, password: string, name: string): Promise<AuthResponse> {
     const response = await api.post('/auth/register', { email, password, name });
