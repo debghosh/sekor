@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authorsController } from '../controllers/authors.controller';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/v1/authors - List all authors
 router.get('/', optionalAuthMiddleware, authorsController.list);

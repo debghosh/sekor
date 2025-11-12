@@ -7,6 +7,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SubscribePage from './pages/auth/SubscribePage';
 import ArticleDetailPage from './pages/reader/ArticleDetailPage';
+import AuthorProfilePage from './pages/creator/AuthorProfilePage';
 
 import AboutPage from './components/public/AboutPage';
 import ContactPage from './components/public/ContactPage';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/subscribe" element={<SubscribePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+    
           
           {/* Protected Routes */}
           <Route 
@@ -58,7 +60,15 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          
+          <Route 
+            path="/author/:id" 
+            element={
+              <ProtectedRoute>
+                <AuthorProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+\          
           {/* Catch all - redirect to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

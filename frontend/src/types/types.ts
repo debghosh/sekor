@@ -13,7 +13,7 @@ export interface Article {
   title: string;
   content: string;
   summary?: string;
-  image?: string;
+  image?: string; // This matches your backend's response
   status: 'DRAFT' | 'PUBLISHED';
   views: number;
   categoryId: number;
@@ -25,6 +25,7 @@ export interface Article {
     name: string;
     email: string;
     avatar?: string;
+    bio?: string; // ADD THIS
   };
   category: Category;
 }

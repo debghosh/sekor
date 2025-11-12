@@ -28,10 +28,15 @@ export const authorsController = {
     }
   },
 
+
+
   async getById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
+      console.log('🔍 Author ID from params:', id); // ADD THIS DEBUG LOG
       const author = await authorsService.getAuthorById(id, req.user?.userId);
+       console.log('🔍 Author returned from service:', author);
+    console.log('🔍 About to send response via ResponseHandler'); // ADD THIS
       ResponseHandler.success(res, author);
     } catch (error: any) {
       if (error.message.includes('not found')) {

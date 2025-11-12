@@ -1,32 +1,9 @@
-import React from 'react';
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { articlesService } from '../../services/articlesService';
+import { Article } from '../../types/types';
 import '../../styles/articleDetail.css';
-
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  summary: string;
-  image?: string;
-  author: {
-    id: string;
-    name: string;
-    avatar?: string;
-    bio?: string;
-  };
-  category?: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const ArticleDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -114,11 +91,11 @@ const ArticleDetailPage = () => {
         {/* Breadcrumb */}
         <nav className="mb-6">
           <Link
-            to="/"
+            to="/home"
             className="inline-flex items-center space-x-2 text-body-sm text-text-medium hover:text-primary transition-colors group"
           >
             <span className="transform group-hover:-translate-x-1 transition-transform">←</span>
-            <span>Back to articles</span>
+            <span>Back to Home</span>
           </Link>
         </nav>
 
@@ -140,19 +117,21 @@ const ArticleDetailPage = () => {
         </h1>
 
         {/* Summary */}
-        <p className="text-body-lg text-text-medium mb-8 leading-relaxed">
-          {article.summary}
-        </p>
+        {article.summary && (
+          <p className="text-body-lg text-text-medium mb-8 leading-relaxed">
+            {article.summary}
+          </p>
+        )}
 
         {/* Author Info Bar */}
         <div className="flex items-center justify-between pb-6 mb-8 border-b border-border">
           {/* Author Section */}
           <Link
-            to={`/author/${article.author.id}`}
+            to={`/author/${article.authorId}`}
             className="flex items-center space-x-3 group"
           >
             {/* Avatar */}
-            {article.author.avatar ? (
+            {article.author?.avatar ? (
               <img
                 src={article.author.avatar}
                 alt={article.author.name}
@@ -161,7 +140,7 @@ const ArticleDetailPage = () => {
             ) : (
               <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
                 <span className="text-primary-700 font-semibold text-lg">
-                  {article.author.name.charAt(0).toUpperCase()}
+                  {article.author?.name.charAt(0).toUpperCase() || 'A'}
                 </span>
               </div>
             )}
@@ -169,7 +148,7 @@ const ArticleDetailPage = () => {
             {/* Author Details */}
             <div>
               <p className="font-semibold text-text-dark group-hover:text-primary transition-colors">
-                {article.author.name}
+                {article.author?.name || 'Unknown Author'}
               </p>
               <div className="flex items-center space-x-2 text-body-sm text-text-medium">
                 <time dateTime={article.createdAt}>{formattedDate}</time>
@@ -183,7 +162,7 @@ const ArticleDetailPage = () => {
           <div className="flex items-center space-x-4 text-body-sm text-text-medium">
             <div className="flex items-center space-x-1">
               <span>👁️</span>
-              <span>{article.views.toLocaleString()}</span>
+              <span>{article.views?.toLocaleString() || 0}</span>
             </div>
           </div>
         </div>
@@ -208,55 +187,57 @@ const ArticleDetailPage = () => {
         {/* Article Footer */}
         <div className="mt-12 pt-8 border-t border-border">
           {/* Author Card */}
-          <div className="bg-background-secondary rounded-xl p-6 mb-8">
-            <div className="flex items-start space-x-4">
-              {/* Avatar */}
-              <Link to={`/author/${article.author.id}`}>
-                {article.author.avatar ? (
-                  <img
-                    src={article.author.avatar}
-                    alt={article.author.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-primary-700 font-semibold text-xl">
-                      {article.author.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </Link>
+          {article.author && (
+            <div className="bg-background-secondary rounded-xl p-6 mb-8">
+              <div className="flex items-start space-x-4">
+                {/* Avatar */}
+                <Link to={`/author/${article.authorId}`}>
+                  {article.author.avatar ? (
+                    <img
+                      src={article.author.avatar}
+                      alt={article.author.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                      <span className="text-primary-700 font-semibold text-xl">
+                        {article.author.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </Link>
 
-              {/* Author Info */}
-              <div className="flex-1">
-                <Link to={`/author/${article.author.id}`}>
-                  <h3 className="text-heading-4 font-serif font-semibold text-text-dark hover:text-primary transition-colors mb-2">
-                    {article.author.name}
-                  </h3>
-                </Link>
-                {article.author.bio && (
-                  <p className="text-body text-text-medium mb-3">
-                    {article.author.bio}
-                  </p>
-                )}
-                <Link
-                  to={`/author/${article.author.id}`}
-                  className="text-body-sm text-primary hover:text-primary-600 font-medium"
-                >
-                  View Profile →
-                </Link>
+                {/* Author Info */}
+                <div className="flex-1">
+                  <Link to={`/author/${article.authorId}`}>
+                    <h3 className="text-heading-4 font-serif font-semibold text-text-dark hover:text-primary transition-colors mb-2">
+                      {article.author.name}
+                    </h3>
+                  </Link>
+                  {article.author.bio && (
+                    <p className="text-body text-text-medium mb-3">
+                      {article.author.bio}
+                    </p>
+                  )}
+                  <Link
+                    to={`/author/${article.authorId}`}
+                    className="text-body-sm text-primary hover:text-primary-600 font-medium"
+                  >
+                    View Profile →
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Back Link */}
           <div className="text-center">
             <Link
-              to="/"
+              to="/home"
               className="inline-flex items-center space-x-2 text-body text-text-medium hover:text-primary transition-colors group"
             >
               <span className="transform group-hover:-translate-x-1 transition-transform">←</span>
-              <span>Back to all articles</span>
+              <span>Back to Home</span>
             </Link>
           </div>
         </div>

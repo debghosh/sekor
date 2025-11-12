@@ -5,7 +5,7 @@ import { articlesService } from '../../services/articlesService';
 import { authorsService, Author } from '../../services/authorsService';
 import { followAuthor, unfollowAuthor, getFollowedAuthors } from '../../services/api';
 import { Article } from '../../types/types';
-import AuthorCard from '../../components/AuthorCard';
+import AuthorCard from '../../components/creator/AuthorCard';
 import '../../styles/homePage.css';
 
 const HomePage = () => {

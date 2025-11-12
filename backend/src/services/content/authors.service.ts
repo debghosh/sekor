@@ -102,6 +102,9 @@ export const authorsService = {
    * Get a single author by ID with detailed stats
    */
   async getAuthorById(authorId: string, currentUserId?: string) {
+
+    console.log('🔍 Service: Searching for author with ID:', authorId);
+    console.log('🔍 Service: Current user ID:', currentUserId);
     const author = await prisma.user.findUnique({
       where: {
         id: authorId,
@@ -132,6 +135,9 @@ export const authorsService = {
       },
     });
 
+    console.log('🔍 Service: Raw author from DB:', author);
+  console.log('🔍 Service: Author name specifically:', author?.name);
+
     if (!author) {
       return null;
     }
@@ -150,19 +156,23 @@ export const authorsService = {
       isFollowing = !!follow;
     }
 
-    return {
-      id: author.id,
-      name: author.name,
-      email: author.email,
-      avatarUrl: author.avatarUrl,
-      bio: author.bio,
-      role: author.role,
-      storiesCount: author._count.content,
-      followersCount: author._count.followers,
-      followingCount: author._count.following,
-      isFollowing,
-      createdAt: author.createdAt,
-    };
+    const result = {
+    id: author.id,
+    name: author.name,
+    email: author.email,
+    avatarUrl: author.avatarUrl,
+    bio: author.bio,
+    role: author.role,
+    storiesCount: author._count.content,
+    followersCount: author._count.followers,
+    followingCount: author._count.following,
+    isFollowing,
+    createdAt: author.createdAt,
+  };
+
+  console.log('🔍 Service: Returning result:', result);
+
+  return result;
   },
 
   /**

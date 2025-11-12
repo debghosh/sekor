@@ -1,6 +1,6 @@
 import React from 'react';
-import { Author } from '../services/authorsService';
-import '../styles/authorCard.css';
+import { Author } from '../../services/authorsService';
+import '../../styles/authorCard.css';
 
 interface AuthorCardProps {
   author: Author;
