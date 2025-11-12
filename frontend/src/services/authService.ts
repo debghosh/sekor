@@ -6,16 +6,19 @@ const API_URL = 'http://localhost:3001/api/v1/auth';
 export const authService = {
   async register(email: string, password: string, name: string): Promise<AuthResponse> {
     const response = await api.post('/auth/register', { email, password, name });
+    // Backend returns { data: { token, user } } format
     return response.data.data;
   },
 
   async login(email: string, password: string): Promise<AuthResponse> {
     const response = await api.post('/auth/login', { email, password });
+    // Backend returns { data: { token, user } } format
     return response.data.data;
   },
 
   async getProfile(): Promise<User> {
     const response = await api.get('/auth/profile');
+    // Backend returns { data: {...} } format
     return response.data.data;
   },
 

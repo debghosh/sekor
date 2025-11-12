@@ -1,6 +1,6 @@
-//import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 //import { PrismaClient, Role,  UserStatus, ContentStatus } from '@prisma/client';
-import { PrismaClient, Role, UserStatus, ContentStatus } from '.prisma/client';
+//import { PrismaClient, Role, UserStatus, ContentStatus } from '.prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -173,6 +173,8 @@ export const authorsService = {
     if (userId === authorId) {
       throw new Error('Cannot follow yourself');
     }
+    //console.log ("Author id in service: ", authorId);
+    //console.log ("User Id in service: ", userId)
 
     // Check if author exists and has appropriate role
     const author = await prisma.user.findUnique({

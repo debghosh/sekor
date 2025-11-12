@@ -4,14 +4,19 @@ import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-// Public routes (with optional auth for personalization)
-router.get('/', optionalAuthMiddleware, articlesController.getAll);
-router.get('/:id', optionalAuthMiddleware, articlesController.getById);
-router.get('/author/:authorId', articlesController.getByAuthor);
+// GET /api/v1/articles - List all articles (with filters)
+router.get('/', optionalAuthMiddleware, articlesController.list);
 
-// Protected routes (authentication required)
+// GET /api/v1/articles/:id - Get single article
+router.get('/:id', optionalAuthMiddleware, articlesController.getById);
+
+// POST /api/v1/articles - Create new article
 router.post('/', authMiddleware, articlesController.create);
+
+// PATCH /api/v1/articles/:id - Update article
 router.patch('/:id', authMiddleware, articlesController.update);
+
+// DELETE /api/v1/articles/:id - Delete article
 router.delete('/:id', authMiddleware, articlesController.delete);
 
 export default router;

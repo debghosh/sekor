@@ -1,34 +1,36 @@
 import { Response } from 'express';
 import { articlesService } from '../services/content/articles.service';
 import { AuthRequest } from '../middleware/auth';
+import { ResponseHandler } from '../utils/response';
+import { PaginationHelper } from '../utils/pagination';
 
 export const articlesController = {
-  async getAll(req: AuthRequest, res: Response) {
+  async list(req: AuthRequest, res: Response) {
     try {
-      const {
-        page,
-        limit,
-        categoryId,
-        authorId,
-        status,
-        search,
-      } = req.query;
+      const { page, per_page, sort, order } = PaginationHelper.parsePaginationParams(req);
+      const { categoryId, authorId, status, search } = req.query;
 
       const result = await articlesService.getAll({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page,
+        limit: per_page,
         categoryId: categoryId as string,
         authorId: authorId as string,
         status: status as string,
         search: search as string,
       });
 
-      res.status(200).json({
-        data: result.articles,
-        pagination: result.pagination,
-      });
+      const pagination = PaginationHelper.calculatePaginationMeta(
+        result.pagination.total,
+        page,
+        per_page
+      );
+
+      const linkHeaders = PaginationHelper.addLinkHeaders(req, page, per_page, pagination.total_pages);
+      res.setHeader('Link', linkHeaders.join(', '));
+
+      ResponseHandler.success(res, result.articles, undefined, pagination);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      ResponseHandler.internalError(res, error.message, req.id);
     }
   },
 
@@ -36,29 +38,35 @@ export const articlesController = {
     try {
       const { id } = req.params;
       const article = await articlesService.getById(id);
-
-      res.status(200).json({
-        data: article,
-      });
+      ResponseHandler.success(res, article);
     } catch (error: any) {
-      res.status(404).json({ error: error.message });
+      if (error.message.includes('not found')) {
+        ResponseHandler.notFound(res, 'Article', req.id);
+      } else {
+        ResponseHandler.internalError(res, error.message, req.id);
+      }
     }
   },
 
   async create(req: AuthRequest, res: Response) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
       }
 
       const { title, content, summary, categoryId, image, status } = req.body;
 
       if (!title || !content || !categoryId) {
-        res.status(400).json({ 
-          error: 'Title, content, and categoryId are required' 
-        });
-        return;
+        return ResponseHandler.badRequest(
+          res,
+          'Missing required fields',
+          [
+            ...((!title) ? [{ field: 'title', issue: 'Title is required' }] : []),
+            ...((!content) ? [{ field: 'content', issue: 'Content is required' }] : []),
+            ...((!categoryId) ? [{ field: 'categoryId', issue: 'Category ID is required' }] : []),
+          ],
+          req.id
+        );
       }
 
       const article = await articlesService.create({
@@ -71,20 +79,16 @@ export const articlesController = {
         status,
       });
 
-      res.status(201).json({
-        message: 'Article created successfully',
-        data: article,
-      });
+      ResponseHandler.created(res, article, { message: 'Article created successfully' });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      ResponseHandler.badRequest(res, error.message, undefined, req.id);
     }
   },
 
   async update(req: AuthRequest, res: Response) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
       }
 
       const { id } = req.params;
@@ -92,59 +96,52 @@ export const articlesController = {
 
       const article = await articlesService.update(
         id,
-        {
-          title,
-          content,
-          summary,
-          categoryId,
-          image,
-          status,
-        },
+        { title, content, summary, categoryId, image, status },
         req.user.userId
       );
 
-      res.status(200).json({
-        message: 'Article updated successfully',
-        data: article,
-      });
+      ResponseHandler.success(res, article, { message: 'Article updated successfully' });
     } catch (error: any) {
-      const statusCode = error.message.includes('Unauthorized') ? 403 : 
-                         error.message.includes('not found') ? 404 : 400;
-      res.status(statusCode).json({ error: error.message });
+      if (error.message.includes('Unauthorized')) {
+        ResponseHandler.forbidden(res, error.message, req.id);
+      } else if (error.message.includes('not found')) {
+        ResponseHandler.notFound(res, 'Article', req.id);
+      } else {
+        ResponseHandler.badRequest(res, error.message, undefined, req.id);
+      }
     }
   },
 
   async delete(req: AuthRequest, res: Response) {
     try {
       if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
       }
 
       const { id } = req.params;
-      const result = await articlesService.delete(
-        id,
-        req.user.userId
-      );
-
-      res.status(200).json(result);
+      await articlesService.delete(id, req.user.userId);
+      ResponseHandler.noContent(res);
     } catch (error: any) {
-      const statusCode = error.message.includes('Unauthorized') ? 403 : 
-                         error.message.includes('not found') ? 404 : 400;
-      res.status(statusCode).json({ error: error.message });
+      if (error.message.includes('Unauthorized')) {
+        ResponseHandler.forbidden(res, error.message, req.id);
+      } else if (error.message.includes('not found')) {
+        ResponseHandler.notFound(res, 'Article', req.id);
+      } else {
+        ResponseHandler.badRequest(res, error.message, undefined, req.id);
+      }
     }
   },
 
-  async getByAuthor(req: AuthRequest, res: Response) {
+  async getArticlesByAuthor(req: AuthRequest, res: Response) {
     try {
       const { authorId } = req.params;
+      const { page, per_page } = PaginationHelper.parsePaginationParams(req);
+      
       const articles = await articlesService.getByAuthor(authorId);
-
-      res.status(200).json({
-        data: articles,
-      });
+      
+      ResponseHandler.success(res, articles);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      ResponseHandler.internalError(res, error.message, req.id);
     }
   },
 };

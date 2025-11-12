@@ -1,12 +1,15 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
-import LandingPage from './pages/LandingPage';
+import LandingPage from './pages/public/LandingPage';
 import HomePage from './pages/reader/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import SubscribePage from './pages/auth/SubscribePage';
 import ArticleDetailPage from './pages/reader/ArticleDetailPage';
+
+import AboutPage from './components/public/AboutPage';
+import ContactPage from './components/public/ContactPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -35,6 +38,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           
           {/* Protected Routes */}
           <Route 

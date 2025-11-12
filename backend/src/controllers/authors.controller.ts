@@ -1,126 +1,107 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
 import { authorsService } from '../services/content/authors.service';
+import { AuthRequest } from '../middleware/auth';
+import { ResponseHandler } from '../utils/response';
+import { PaginationHelper } from '../utils/pagination';
 
 export const authorsController = {
-  /**
-   * Get all authors with their stats
-   * GET /api/authors
-   */
-  async getAuthors(req: AuthRequest, res: Response) {
+  async list(req: AuthRequest, res: Response) {
     try {
-      const { page = 1, limit = 20, role } = req.query;
-      const userId = req.user?.userId; // Changed from id to userId
-
+      const { page, per_page } = PaginationHelper.parsePaginationParams(req);
       const result = await authorsService.getAuthors({
-        page: Number(page),
-        limit: Number(limit),
-        role: role as string,
-        currentUserId: userId,
+        page,
+        limit: per_page,
+        currentUserId: req.user?.userId
       });
-
-      res.json(result);
-    } catch (error) {
-      console.error('Get authors error:', error);
-      res.status(500).json({ error: 'Failed to fetch authors' });
+      
+      // Convert pagination format
+      const pagination = {
+        page: result.pagination.page,
+        per_page: result.pagination.limit,
+        total: result.pagination.total,
+        total_pages: result.pagination.totalPages
+      };
+      
+      ResponseHandler.success(res, result.data, undefined, pagination);
+    } catch (error: any) {
+      ResponseHandler.internalError(res, error.message, req.id);
     }
   },
 
-  /**
-   * Get a single author's profile with stats
-   * GET /api/authors/:id
-   */
-  async getAuthorById(req: AuthRequest, res: Response) {
+  async getById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const userId = req.user?.userId; // Changed from id to userId
-
-      const author = await authorsService.getAuthorById(id, userId);
-
-      if (!author) {
-        return res.status(404).json({ error: 'Author not found' });
-      }
-
-      res.json(author);
-    } catch (error) {
-      console.error('Get author error:', error);
-      res.status(500).json({ error: 'Failed to fetch author' });
-    }
-  },
-
-  /**
-   * Follow an author
-   * POST /api/authors/:id/follow
-   */
-  async followAuthor(req: AuthRequest, res: Response) {
-    try {
-      const { id: authorId } = req.params;
-      const userId = req.user?.userId; // Changed from id to userId
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      await authorsService.followAuthor(userId, authorId);
-
-      res.json({ success: true, message: 'Author followed successfully' });
+      const author = await authorsService.getAuthorById(id, req.user?.userId);
+      ResponseHandler.success(res, author);
     } catch (error: any) {
-      console.error('Follow author error:', error);
-      if (error.message === 'Cannot follow yourself') {
-        return res.status(400).json({ error: error.message });
+      if (error.message.includes('not found')) {
+        ResponseHandler.notFound(res, 'Author', req.id);
+      } else {
+        ResponseHandler.internalError(res, error.message, req.id);
       }
-      if (error.message === 'Author not found') {
-        return res.status(404).json({ error: error.message });
-      }
-      res.status(500).json({ error: 'Failed to follow author' });
     }
   },
 
-  /**
-   * Unfollow an author
-   * DELETE /api/authors/:id/follow
-   */
+  async followAuthor(req: AuthRequest, res: Response) {
+
+    console.log("Controller req.params:", req.params);
+    try {
+      if (!req.user) {
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
+      }
+
+      const { authorId: authorId } = req.params;
+      console.log ("authorId in controller: ", authorId);
+
+      await authorsService.followAuthor(req.user.userId, req.params.authorId);
+      ResponseHandler.created(res, { followed: true }, { message: 'Author followed successfully' });
+    } catch (error: any) {
+      if (error.message.includes('already following')) {
+        ResponseHandler.conflict(res, 'Already following this author', req.id);
+      } else {
+        ResponseHandler.internalError(res, error.message, req.id);
+      }
+    }
+  },
+
   async unfollowAuthor(req: AuthRequest, res: Response) {
     try {
-      const { id: authorId } = req.params;
-      const userId = req.user?.userId; // Changed from id to userId
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
+      if (!req.user) {
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
       }
 
-      await authorsService.unfollowAuthor(userId, authorId);
-
-      res.json({ success: true, message: 'Author unfollowed successfully' });
-    } catch (error) {
-      console.error('Unfollow author error:', error);
-      res.status(500).json({ error: 'Failed to unfollow author' });
+      const { id: authorId } = req.params;
+      await authorsService.unfollowAuthor(req.user.userId, authorId);
+      ResponseHandler.noContent(res);
+    } catch (error: any) {
+      ResponseHandler.internalError(res, error.message, req.id);
     }
   },
 
-  /**
-   * Get authors that the current user is following
-   * GET /api/authors/following/list
-   */
-  async getFollowingAuthors(req: AuthRequest, res: Response) {
+  async getFollowing(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId; // Changed from id to userId
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
+      if (!req.user) {
+        return ResponseHandler.unauthorized(res, 'Authentication required', req.id);
       }
 
-      const { page = 1, limit = 20 } = req.query;
-
-      const result = await authorsService.getFollowingAuthors(userId, {
-        page: Number(page),
-        limit: Number(limit),
+      const { page, per_page } = PaginationHelper.parsePaginationParams(req);
+      
+      const result = await authorsService.getFollowingAuthors(req.user.userId, {
+        page,
+        limit: per_page
       });
-
-      res.json(result);
-    } catch (error) {
-      console.error('Get following authors error:', error);
-      res.status(500).json({ error: 'Failed to fetch following authors' });
+      
+      // Convert pagination format
+      const pagination = {
+        page: result.pagination.page,
+        per_page: result.pagination.limit,
+        total: result.pagination.total,
+        total_pages: result.pagination.totalPages
+      };
+      
+      ResponseHandler.success(res, result.data, undefined, pagination);
+    } catch (error: any) {
+      ResponseHandler.internalError(res, error.message, req.id);
     }
   },
 };

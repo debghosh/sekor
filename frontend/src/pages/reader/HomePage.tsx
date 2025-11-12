@@ -80,8 +80,7 @@ const HomePage = () => {
       setLoading(true);
       setError(null);
       const response = await articlesService.getAll({
-        page: 1,
-        limit: 20,
+        page: 1
       });
       setArticles(response.data);
     } catch (err) {
@@ -108,8 +107,7 @@ const HomePage = () => {
     try {
       setAuthorsLoading(true);
       const response = await authorsService.getFollowing({
-        page: 1,
-        limit: 20,
+        page: 1
       });
       setAuthors(response.data);
     } catch (err) {
@@ -136,7 +134,7 @@ const HomePage = () => {
   const getFilteredArticles = () => {
     switch(activeTab) {
       case 'following':
-        return articles.filter(a => followedAuthors.has(String(a.authorId)));
+        return articles.filter(a => followedAuthors.has(String(a.author.id)));
       case 'saved':
         return articles.filter(a => savedArticles.has(a.id));
       case 'heritage':
@@ -164,6 +162,8 @@ const HomePage = () => {
       navigate('/login');
       return;
     }
+
+    //console.log("HomePage → handleFollow authorId:", authorId, typeof authorId);
 
     try {
       if (followedAuthors.has(authorId)) {
@@ -367,10 +367,10 @@ const HomePage = () => {
                         <span className="story-card__date">• {formatDate(article.createdAt)}</span>
                       </div>
                       <button 
-                        className={`story-card__follow-btn ${followedAuthors.has(String(article.authorId)) ? 'following' : ''}`}
-                        onClick={(e) => handleFollow(e, String(article.authorId))}
+                        className={`story-card__follow-btn ${followedAuthors.has(String(article.author.id)) ? 'following' : ''}`}
+                        onClick={(e) => handleFollow(e, String(article.author.id))}
                       >
-                        {followedAuthors.has(String(article.authorId)) ? 'Following' : '+ Follow'}
+                        {followedAuthors.has(String(article.author.id)) ? 'Following' : '+ Follow'}
                       </button>
                     </div>
                     <div className="story-card__category-tag">{article.category.name}</div>

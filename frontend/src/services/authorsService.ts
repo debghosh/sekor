@@ -1,8 +1,5 @@
 import axios from 'axios';
 
-//const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
-//const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api/v1';
-
 const API_URL = 'http://localhost:3001/api/v1';
 
 export interface Author {
@@ -12,8 +9,8 @@ export interface Author {
   avatarUrl: string | null;
   bio: string | null;
   role: string;
-  storiesCount: number;
-  followersCount: number;
+  storiesCount?: number;
+  followersCount?: number;
   isFollowing: boolean;
   createdAt: string;
 }
@@ -22,17 +19,14 @@ export interface AuthorsResponse {
   data: Author[];
   pagination: {
     page: number;
-    limit: number;
+    per_page: number;  // Changed from 'limit'
     total: number;
-    totalPages: number;
+    total_pages: number;  // Changed from 'totalPages'
   };
 }
 
 const getAuthToken = () => {
   const token = localStorage.getItem('accessToken');
-  console.log('🔍 getAuthToken called, token:', token ? 'EXISTS' : 'NULL');
-  console.log('🔍 Full token:', token);
-  console.log('🔍 All localStorage keys:', Object.keys(localStorage));
   return token;
 };
 
@@ -42,7 +36,7 @@ export const authorsService = {
    */
   async getAll(params?: {
     page?: number;
-    limit?: number;
+    per_page?: number;  // Changed from 'limit'
     role?: string;
   }): Promise<AuthorsResponse> {
     const token = getAuthToken();
@@ -55,6 +49,7 @@ export const authorsService = {
       params,
     });
 
+    // Backend returns { data, pagination } format
     return response.data;
   },
 
@@ -68,7 +63,8 @@ export const authorsService = {
       : {};
 
     const response = await axios.get(`${API_URL}/authors/${id}`, config);
-    return response.data;
+    // Extract from { data: {...} } wrapper
+    return response.data.data;
   },
 
   /**
@@ -105,21 +101,24 @@ export const authorsService = {
 
   /**
    * Get authors that the current user is following
+   * ROUTE CHANGED: /authors/following/list -> /follows
    */
   async getFollowing(params?: {
     page?: number;
-    limit?: number;
+    per_page?: number;  // Changed from 'limit'
   }): Promise<AuthorsResponse> {
     const token = getAuthToken();
     if (!token) {
       throw new Error('Authentication required');
     }
 
-    const response = await axios.get(`${API_URL}/authors/following/list`, {
+    // IMPORTANT: Route changed from /authors/following/list to /follows
+    const response = await axios.get(`${API_URL}/follows`, {
       headers: { Authorization: `Bearer ${token}` },
       params,
     });
 
+    // Backend returns { data: [...] } format
     return response.data;
   },
 };

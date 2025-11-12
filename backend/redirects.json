@@ -1,0 +1,17 @@
+{
+  "redirects": [
+    {
+      "from": "/api/auth",
+      "to": "/api/v1/auth",
+      "status": 307,
+      "deprecationDate": "2025-01-01",
+      "sunsetDate": "2025-06-01",
+      "reason": "API versioning - all routes moved under /api/v1"
+    }
+  ],
+  "notes": [
+    "All redirects use HTTP 307 (Temporary Redirect) to preserve HTTP method",
+    "Deprecation and Sunset headers are automatically added",
+    "Redirects are logged for telemetry and migration tracking"
+  ]
+}

@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
-
 const API_BASE_URL = 'http://localhost:3001/api/v1';
 
 export const api = axios.create({
@@ -20,7 +18,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle response errors
+// Handle response errors with new error format
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -31,15 +29,33 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
+    // New error format: { error: { code, message, details, request_id } }
+    if (error.response?.data?.error) {
+      const { code, message, details, request_id } = error.response.data.error;
+      console.error(`[${request_id}] ${code}: ${message}`, details);
+      // Attach formatted error for easier handling
+      error.formattedError = { code, message, details, request_id };
+    }
+    
     return Promise.reject(error);
   }
 );
 
+// Updated follow/unfollow functions with new response format
 export const followAuthor = async (authorId: string): Promise<void> => {
+
+  console.log("api.ts → followAuthor arg:", authorId, typeof authorId);
+  if (!authorId) throw new Error("api.ts: missing authorId");
+  
   const token = localStorage.getItem('accessToken');
   
   if (!token) {
     throw new Error('No authentication token found');
+  }
+
+  if (!authorId) {
+    throw new Error (authorId || " is not correct")
   }
   
   const response = await fetch(`${API_BASE_URL}/follows/${authorId}`, {
@@ -51,7 +67,8 @@ export const followAuthor = async (authorId: string): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to follow author');
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Failed to follow author');
   }
 };
 
@@ -70,10 +87,12 @@ export const unfollowAuthor = async (authorId: string): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to unfollow author');
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Failed to unfollow author');
   }
 };
 
+// Updated getFollowedAuthors with new endpoint and response format
 export const getFollowedAuthors = async (): Promise<string[]> => {
   const token = localStorage.getItem('accessToken');
   
@@ -82,19 +101,29 @@ export const getFollowedAuthors = async (): Promise<string[]> => {
     return [];
   }
   
-  console.log('🔑 Token from localStorage:', token.substring(0, 20) + '...');
+  console.log('🔑 Fetching followed authors with token');
   
-  const response = await fetch(`${API_BASE_URL}/follows/following`, {
+  // IMPORTANT: Endpoint changed from /follows/following to /follows
+  const response = await fetch(`${API_BASE_URL}/follows`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch followed authors');
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Failed to fetch followed authors');
   }
 
-  const data = await response.json();
-  return data.followedAuthors;
+  const responseData = await response.json();
+  
+  // Backend now returns { data: [...] } format
+  // Extract author IDs from the author objects
+  if (responseData.data && Array.isArray(responseData.data)) {
+    return responseData.data.map((author: any) => author.id);
+  }
+  
+  return [];
 };
+
 export default api;

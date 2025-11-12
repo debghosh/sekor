@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import '../styles/landing.css';
+import { useAuthStore } from '../../store/authStore';
+import '../../styles/landing.css';
+
+const carouselImages = [
+  {
+    url: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=1600&q=80',
+    alt: 'Kolkata Howrah Bridge'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1600&q=80',
+    alt: 'Durga Puja Pandal'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=1600&q=80',
+    alt: 'Shantiniketan'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=1600&q=80',
+    alt: 'Terracotta Temples'
+  }
+];
 
 const LandingPage = () => {
   const { isAuthenticated } = useAuthStore();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // If authenticated, show personalized message
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (isAuthenticated) {
     return (
       <div className="landing-page">
@@ -39,8 +65,19 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section with Carousel */}
       <section className="landing-hero">
+        <div className="landing-hero__carousel">
+          {carouselImages.map((image, index) => (
+            <div
+              key={index}
+              className={`landing-hero__slide ${index === currentSlide ? 'active' : ''}`}
+              style={{ backgroundImage: `url(${image.url})` }}
+            />
+          ))}
+          <div className="landing-hero__overlay" />
+        </div>
+        
         <div className="landing-hero__container">
           <h1 className="landing-hero__title">
             A Living Archive of Bengali Cultural Memory
@@ -58,9 +95,21 @@ const LandingPage = () => {
             </Link>
           </div>
         </div>
+
+        {/* Carousel Indicators */}
+        <div className="landing-hero__indicators">
+          {carouselImages.map((_, index) => (
+            <button
+              key={index}
+              className={`landing-hero__indicator ${index === currentSlide ? 'active' : ''}`}
+              onClick={() => setCurrentSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - Moved Up */}
       <section className="landing-features">
         <div className="landing-features__container">
           <div className="landing-feature">

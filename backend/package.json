@@ -1,7 +1,9 @@
 {
   "name": "@sekor-bkc/backend",
   "version": "1.0.0",
+  "description": "SEKOR-BKC REST API - শেকড় Backend",
   "private": true,
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
@@ -9,12 +11,15 @@
     "test": "jest --runInBand",
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration --runInBand",
+    "test:contracts": "jest --testPathPattern=tests/contracts --runInBand",
     "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "validate": "pnpm run lint && pnpm run build && pnpm test"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
@@ -49,8 +54,13 @@
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "prisma": "^5.7.1",
+    "supertest": "^6.3.3",
+    "@types/supertest": "^6.0.2",
     "ts-jest": "^29.1.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

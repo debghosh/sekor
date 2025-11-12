@@ -6,17 +6,25 @@ const API_URL = 'http://localhost:3001/api/v1/articles';
 export const articlesService = {
   async getAll(params?: {
     page?: number;
-    limit?: number;
-    categoryId?: number;
-    authorId?: number;
+    per_page?: number;  // Changed from 'limit' to 'per_page'
+    categoryId?: string;
+    authorId?: string;
     search?: string;
+    status?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
   }): Promise<ArticlesResponse> {
     const response = await api.get('/articles', { params });
-    return response.data;
+    // Backend now returns { data, pagination } format
+    return {
+      data: response.data.data,
+      pagination: response.data.pagination
+    };
   },
 
-  async getById(id: number): Promise<Article> {
+  async getById(id: string): Promise<Article> {
     const response = await api.get(`/articles/${id}`);
+    // Extract from { data: {...} } wrapper
     return response.data.data;
   },
 
@@ -24,32 +32,38 @@ export const articlesService = {
     title: string;
     content: string;
     summary?: string;
-    categoryId: number;
+    categoryId: string;
     image?: string;
     status?: 'DRAFT' | 'PUBLISHED';
   }): Promise<Article> {
     const response = await api.post('/articles', data);
+    // Extract from { data: {...} } wrapper
     return response.data.data;
   },
 
-  async update(id: number, data: Partial<{
+  async update(id: string, data: Partial<{
     title: string;
     content: string;
     summary?: string;
-    categoryId: number;
+    categoryId: string;
     image?: string;
     status?: 'DRAFT' | 'PUBLISHED';
   }>): Promise<Article> {
     const response = await api.patch(`/articles/${id}`, data);
+    // Extract from { data: {...} } wrapper
     return response.data.data;
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await api.delete(`/articles/${id}`);
+    // DELETE now returns 204 No Content
   },
 
-  async getByAuthor(authorId: number): Promise<Article[]> {
-    const response = await api.get(`/articles/author/${authorId}`);
+  async getByAuthor(authorId: string): Promise<Article[]> {
+    // Use filter query parameter instead of dedicated route
+    const response = await api.get('/articles', { 
+      params: { authorId } 
+    });
     return response.data.data;
   },
 };
