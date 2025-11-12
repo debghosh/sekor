@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate  } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import '../../styles/landing.css';
 
@@ -25,6 +25,7 @@ const carouselImages = [
 const LandingPage = () => {
   const { isAuthenticated } = useAuthStore();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -33,22 +34,13 @@ const LandingPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  if (isAuthenticated) {
-    return (
-      <div className="landing-page">
-        <nav className="landing-nav">
-          <div className="landing-nav__container">
-            <Link to="/" className="landing-nav__logo">শেকড়</Link>
-            <Link to="/home" className="landing-nav__button">Go to Home</Link>
-          </div>
-        </nav>
-        <div className="landing-hero">
-          <h1>Welcome back!</h1>
-          <Link to="/home" className="landing-cta">Continue Reading</Link>
-        </div>
-      </div>
-    );
-  }
+   // Redirect authenticated users to home
+    useEffect(() => {
+      if (isAuthenticated) {
+        navigate('/home');
+      }
+  }, [isAuthenticated, navigate]);
+
 
   return (
     <div className="landing-page">
