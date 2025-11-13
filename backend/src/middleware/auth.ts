@@ -14,15 +14,21 @@ export const authenticateToken = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   console.log('🔐 Auth middleware - Headers:', req.headers.authorization);
   
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!authHeader) {
+    res.status(401).json({ error: 'No token' });
+    return;
+  }
+  
+  const token = authHeader.split(' ')[1];
 
   if (!token) {
-    console.log('❌ No token provided');
-    return res.status(401).json({ error: 'Authentication required' });
+    res.status(401).json({ error: 'No token' });
+    return;
   }
 
   try {
@@ -34,8 +40,9 @@ export const authenticateToken = (
     };
     next();
   } catch (error) {
-    console.log('❌ Token verification failed:', error);
-    return res.status(403).json({ error: 'Invalid token' });
+    console.error('❌ Token verification failed:', error);
+    res.status(401).json({ error: 'Invalid token' });
+    return;
   }
 };
 

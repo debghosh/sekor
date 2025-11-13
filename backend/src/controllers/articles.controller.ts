@@ -7,12 +7,17 @@ import { PaginationHelper } from '../utils/pagination';
 export const articlesController = {
   async list(req: AuthRequest, res: Response) {
     try {
+
       const { page, per_page, sort, order } = PaginationHelper.parsePaginationParams(req);
+
+      // Cap per_page at 100
+      const safePerPage = Math.min(per_page, 100);
+
       const { categoryId, authorId, status, search } = req.query;
 
       const result = await articlesService.getAll({
         page,
-        limit: per_page,
+        limit: safePerPage,
         categoryId: categoryId as string,
         authorId: authorId as string,
         status: status as string,
@@ -30,8 +35,11 @@ export const articlesController = {
 
       ResponseHandler.success(res, result.articles, undefined, pagination);
     } catch (error: any) {
-      ResponseHandler.internalError(res, error.message, req.id);
-    }
+        if (error.message.includes('Invalid category')) {
+          return ResponseHandler.badRequest(res, 'Invalid category', undefined, req.id);
+        }
+        ResponseHandler.internalError(res, error.message, req.id);
+      }
   },
 
   async getById(req: AuthRequest, res: Response) {

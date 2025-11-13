@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { authorsService } from '../services/content/authors.service';
+import { articlesService } from '../services/content/articles.service';
 import { AuthRequest } from '../middleware/auth';
 import { ResponseHandler } from '../utils/response';
 import { PaginationHelper } from '../utils/pagination';
@@ -28,15 +29,19 @@ export const authorsController = {
     }
   },
 
-
-
   async getById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      console.log('🔍 Author ID from params:', id); // ADD THIS DEBUG LOG
+      console.log('🔍 Author ID from params:', id);
       const author = await authorsService.getAuthorById(id, req.user?.userId);
-       console.log('🔍 Author returned from service:', author);
-    console.log('🔍 About to send response via ResponseHandler'); // ADD THIS
+      console.log('🔍 Author returned from service:', author);
+      
+      // ADD 404 CHECK
+      if (!author) {
+        return ResponseHandler.notFound(res, 'Author', req.id);
+      }
+      
+      console.log('🔍 About to send response via ResponseHandler');
       ResponseHandler.success(res, author);
     } catch (error: any) {
       if (error.message.includes('not found')) {
@@ -105,6 +110,31 @@ export const authorsController = {
       };
       
       ResponseHandler.success(res, result.data, undefined, pagination);
+    } catch (error: any) {
+      ResponseHandler.internalError(res, error.message, req.id);
+    }
+  },
+
+  async getArticles(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { page, per_page } = PaginationHelper.parsePaginationParams(req);
+      
+      const result = await articlesService.getAll({
+        page,
+        limit: per_page,
+        authorId: id,
+        status: 'PUBLISHED',
+      });
+      
+      const pagination = {
+        page: result.pagination.page,
+        per_page: result.pagination.limit,
+        total: result.pagination.total,
+        total_pages: result.pagination.totalPages,
+      };
+      
+      ResponseHandler.success(res, result.articles, undefined, pagination);
     } catch (error: any) {
       ResponseHandler.internalError(res, error.message, req.id);
     }

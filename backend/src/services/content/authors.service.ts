@@ -1,6 +1,4 @@
 import { PrismaClient, Role } from '@prisma/client';
-//import { PrismaClient, Role,  UserStatus, ContentStatus } from '@prisma/client';
-//import { PrismaClient, Role, UserStatus, ContentStatus } from '.prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +15,6 @@ export const authorsService = {
     const { page, limit, role, currentUserId } = params;
     const skip = (page - 1) * limit;
 
-    // Build filter for authors (users with AUTHOR, EDITOR, or ADMIN role)
     const roleFilter: any = {
       role: {
         in: role ? [role as Role] : [Role.AUTHOR, Role.EDITOR, Role.ADMIN],
@@ -25,18 +22,16 @@ export const authorsService = {
       status: 'ACTIVE',
     };
 
-    // Get total count
     const total = await prisma.user.count({
       where: roleFilter,
     });
 
-    // Get authors with stats
     const authors = await prisma.user.findMany({
       where: roleFilter,
       select: {
         id: true,
         name: true,
-        email: true,
+        // email: true,  ← REMOVE THIS LINE
         avatarUrl: true,
         bio: true,
         role: true,
@@ -59,7 +54,6 @@ export const authorsService = {
       take: limit,
     });
 
-    // If currentUserId provided, check which authors the user is following
     let followingIds: string[] = [];
     if (currentUserId) {
       const following = await prisma.userFollow.findMany({
@@ -73,11 +67,10 @@ export const authorsService = {
       followingIds = following.map((f) => f.followingId);
     }
 
-    // Format response
     const formattedAuthors = authors.map((author) => ({
       id: author.id,
       name: author.name,
-      email: author.email,
+      // email: author.email,  ← REMOVE THIS LINE
       avatarUrl: author.avatarUrl,
       bio: author.bio,
       role: author.role,
@@ -102,9 +95,9 @@ export const authorsService = {
    * Get a single author by ID with detailed stats
    */
   async getAuthorById(authorId: string, currentUserId?: string) {
-
     console.log('🔍 Service: Searching for author with ID:', authorId);
     console.log('🔍 Service: Current user ID:', currentUserId);
+    
     const author = await prisma.user.findUnique({
       where: {
         id: authorId,
@@ -116,7 +109,7 @@ export const authorsService = {
       select: {
         id: true,
         name: true,
-        email: true,
+        // email: true,  ← REMOVE THIS LINE
         avatarUrl: true,
         bio: true,
         role: true,
@@ -136,13 +129,12 @@ export const authorsService = {
     });
 
     console.log('🔍 Service: Raw author from DB:', author);
-  console.log('🔍 Service: Author name specifically:', author?.name);
+    console.log('🔍 Service: Author name specifically:', author?.name);
 
     if (!author) {
       return null;
     }
 
-    // Check if current user is following this author
     let isFollowing = false;
     if (currentUserId) {
       const follow = await prisma.userFollow.findUnique({
@@ -157,36 +149,32 @@ export const authorsService = {
     }
 
     const result = {
-    id: author.id,
-    name: author.name,
-    email: author.email,
-    avatarUrl: author.avatarUrl,
-    bio: author.bio,
-    role: author.role,
-    storiesCount: author._count.content,
-    followersCount: author._count.followers,
-    followingCount: author._count.following,
-    isFollowing,
-    createdAt: author.createdAt,
-  };
+      id: author.id,
+      name: author.name,
+      // email: author.email,  ← REMOVE THIS LINE
+      avatarUrl: author.avatarUrl,
+      bio: author.bio,
+      role: author.role,
+      storiesCount: author._count.content,
+      followersCount: author._count.followers,
+      followingCount: author._count.following,
+      isFollowing,
+      createdAt: author.createdAt,
+    };
 
-  console.log('🔍 Service: Returning result:', result);
+    console.log('🔍 Service: Returning result:', result);
 
-  return result;
+    return result;
   },
 
   /**
    * Follow an author
    */
   async followAuthor(userId: string, authorId: string) {
-    // Check if trying to follow self
     if (userId === authorId) {
       throw new Error('Cannot follow yourself');
     }
-    //console.log ("Author id in service: ", authorId);
-    //console.log ("User Id in service: ", userId)
 
-    // Check if author exists and has appropriate role
     const author = await prisma.user.findUnique({
       where: {
         id: authorId,
@@ -201,7 +189,6 @@ export const authorsService = {
       throw new Error('Author not found');
     }
 
-    // Create follow relationship (will be ignored if already exists due to unique constraint)
     await prisma.userFollow.upsert({
       where: {
         followerId_followingId: {
@@ -215,8 +202,6 @@ export const authorsService = {
       },
       update: {},
     });
-
-    // TODO: Create notification for the author
   },
 
   /**
@@ -245,14 +230,12 @@ export const authorsService = {
     const { page, limit } = params;
     const skip = (page - 1) * limit;
 
-    // Get total count
     const total = await prisma.userFollow.count({
       where: {
         followerId: userId,
       },
     });
 
-    // Get followed authors with stats
     const follows = await prisma.userFollow.findMany({
       where: {
         followerId: userId,
@@ -262,7 +245,7 @@ export const authorsService = {
           select: {
             id: true,
             name: true,
-            email: true,
+            // email: true,  ← REMOVE THIS LINE
             avatarUrl: true,
             bio: true,
             role: true,
@@ -291,7 +274,7 @@ export const authorsService = {
     const formattedAuthors = follows.map((follow) => ({
       id: follow.following.id,
       name: follow.following.name,
-      email: follow.following.email,
+      // email: follow.following.email,  ← REMOVE THIS LINE
       avatarUrl: follow.following.avatarUrl,
       bio: follow.following.bio,
       role: follow.following.role,

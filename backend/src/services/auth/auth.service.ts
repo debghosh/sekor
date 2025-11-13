@@ -82,6 +82,10 @@ export const authService = {
       throw new Error('Invalid email or password');
     }
 
+    if (!user.passwordHash) {
+      throw new Error('Invalid email or password');
+    }
+
     // Verify password
     const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
@@ -105,7 +109,7 @@ export const authService = {
     };
   },
 
-  async getProfile(userId: number) {
+  async getProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {

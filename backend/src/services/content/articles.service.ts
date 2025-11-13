@@ -43,9 +43,27 @@ export const articlesService = {
 
     const where: any = { type: 'ARTICLE' };
 
-    if (categoryId) where.categoryId = categoryId;
+    //if (categoryId) where.categoryId = categoryId;
+    if (categoryId) {
+    // Validate category exists
+      const category = await prisma.category.findFirst({
+        where: {
+          OR: [
+            { slug: categoryId.toLowerCase() },
+            { id: categoryId },
+            { name: { equals: categoryId, mode: 'insensitive' } },
+          ]
+        }
+      });
+      
+      if (!category) {
+        throw new Error('Invalid category');
+      }
+      
+      where.categoryId = category.id;
+    }
+  
     if (authorId) where.authorId = authorId;
-    //if (status) where.status = status;
     if (status) {
       where.status = status.toUpperCase() as ContentStatus;
     }
@@ -98,7 +116,8 @@ export const articlesService = {
         email: content.author.email,
         avatar: content.author.avatarUrl,
       },
-      category: content.category,
+      // FIX: Convert category object to string slug
+      category: content.category?.slug || content.category?.name || 'UNCATEGORIZED',
     }));
 
     return {
@@ -159,7 +178,8 @@ export const articlesService = {
         bio: content.author.bio,
         avatar: content.author.avatarUrl,
       },
-      category: content.category,
+      // FIX: Convert category object to string slug
+      category: content.category?.slug || content.category?.name || 'UNCATEGORIZED',
     };
   },
 
@@ -215,7 +235,8 @@ export const articlesService = {
         email: content.author.email,
         avatar: content.author.avatarUrl,
       },
-      category: content.category,
+      // FIX: Convert category object to string slug
+      category: content.category?.slug || content.category?.name || 'UNCATEGORIZED',
     };
   },
 
@@ -289,7 +310,8 @@ export const articlesService = {
         email: content.author.email,
         avatar: content.author.avatarUrl,
       },
-      category: content.category,
+      // FIX: Convert category object to string slug
+      category: content.category?.slug || content.category?.name || 'UNCATEGORIZED',
     };
   },
 
@@ -354,7 +376,8 @@ export const articlesService = {
         email: content.author.email,
         avatar: content.author.avatarUrl,
       },
-      category: content.category,
+      // FIX: Convert category object to string slug
+      category: content.category?.slug || content.category?.name || 'UNCATEGORIZED',
     }));
   },
 };
