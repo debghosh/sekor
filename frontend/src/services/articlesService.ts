@@ -1,12 +1,10 @@
-import api from './api';
+import { api } from './api';
 import { Article, ArticlesResponse } from '../types/types';
-
-const API_URL = 'http://localhost:3001/api/v1/articles';
 
 export const articlesService = {
   async getAll(params?: {
     page?: number;
-    per_page?: number;  // Changed from 'limit' to 'per_page'
+    per_page?: number;
     categoryId?: string;
     authorId?: string;
     search?: string;
@@ -15,10 +13,10 @@ export const articlesService = {
     order?: 'asc' | 'desc';
   }): Promise<ArticlesResponse> {
     const response = await api.get('/articles', { params });
-    // Backend now returns { data, pagination } format
+    // Backend returns { data, pagination } format
     return {
       data: response.data.data,
-      pagination: response.data.pagination
+      pagination: response.data.pagination,
     };
   },
 
@@ -41,14 +39,17 @@ export const articlesService = {
     return response.data.data;
   },
 
-  async update(id: string, data: Partial<{
-    title: string;
-    content: string;
-    summary?: string;
-    categoryId: string;
-    image?: string;
-    status?: 'DRAFT' | 'PUBLISHED';
-  }>): Promise<Article> {
+  async update(
+    id: string,
+    data: Partial<{
+      title: string;
+      content: string;
+      summary?: string;
+      categoryId: string;
+      image?: string;
+      status?: 'DRAFT' | 'PUBLISHED';
+    }>
+  ): Promise<Article> {
     const response = await api.patch(`/articles/${id}`, data);
     // Extract from { data: {...} } wrapper
     return response.data.data;
@@ -56,13 +57,13 @@ export const articlesService = {
 
   async delete(id: string): Promise<void> {
     await api.delete(`/articles/${id}`);
-    // DELETE now returns 204 No Content
+    // DELETE returns 204 No Content
   },
 
   async getByAuthor(authorId: string): Promise<Article[]> {
-    // Use filter query parameter instead of dedicated route
-    const response = await api.get('/articles', { 
-      params: { authorId } 
+    // Use filter query parameter
+    const response = await api.get('/articles', {
+      params: { authorId },
     });
     return response.data.data;
   },

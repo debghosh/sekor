@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword, comparePassword, validatePassword } from '../../utils/password';
-import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 
 const prisma = new PrismaClient();
 
@@ -60,12 +60,20 @@ export const authService = {
     });
 
     // Generate tokens
-    const accessToken = generateAccessToken({ userId: user.id, email: user.email });
-    const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
+    const token = generateAccessToken({ 
+      userId: user.id, 
+      email: user.email,
+      role: user.role 
+    });
+    
+    const refreshToken = generateRefreshToken({ 
+      userId: user.id 
+    });
 
     return {
       user,
-      accessToken,
+      token,          // For backwards compatibility
+      accessToken: token,
       refreshToken,
     };
   },
@@ -86,6 +94,11 @@ export const authService = {
       throw new Error('Invalid email or password');
     }
 
+    // Check if account is active
+    if (user.status !== 'ACTIVE') {
+      throw new Error('Account is not active');
+    }
+
     // Verify password
     const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
@@ -93,8 +106,15 @@ export const authService = {
     }
 
     // Generate tokens
-    const accessToken = generateAccessToken({ userId: user.id, email: user.email });
-    const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
+    const token = generateAccessToken({ 
+      userId: user.id, 
+      email: user.email,
+      role: user.role 
+    });
+    
+    const refreshToken = generateRefreshToken({ 
+      userId: user.id 
+    });
 
     return {
       user: {
@@ -104,9 +124,57 @@ export const authService = {
         role: user.role,
         createdAt: user.createdAt,
       },
-      accessToken,
+      token,          // For backwards compatibility
+      accessToken: token,
       refreshToken,
     };
+  },
+
+  async refreshToken(refreshToken: string) {
+    try {
+      // Verify refresh token
+      const decoded = verifyRefreshToken(refreshToken);
+      
+      // Get user from database
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user.status !== 'ACTIVE') {
+        throw new Error('Account is not active');
+      }
+
+      // Generate new access token (short-lived)
+      const token = generateAccessToken({ 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role 
+      });
+
+      return {
+        token,
+        accessToken: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      throw new Error('Invalid or expired refresh token');
+    }
   },
 
   async getProfile(userId: string) {

@@ -1,43 +1,52 @@
-import api from './api';
-import { AuthResponse, User } from '../types/types';
+import apiClient from '../lib/apiClient';
+import { User } from '../types/types';
 
-const API_URL = 'http://localhost:3001/api/v1/auth';
+interface AuthResponse {
+  message: string;
+  data: {
+    user: User;
+    // No tokens in response - they're in httpOnly cookies!
+  };
+}
 
 export const authService = {
-  async register(email: string, password: string, name: string): Promise<AuthResponse> {
-    const response = await api.post('/auth/register', { email, password, name });
-    // Backend returns { data: { token, user } } format
-    return response.data.data;
+  // Login
+  async login(email: string, password: string): Promise<{ user: User }> {
+    const response = await apiClient.post<AuthResponse>('/auth/login', {
+      email,
+      password,
+    });
+    return { user: response.data.data.user };
   },
 
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post('/auth/login', { email, password });
-    // Backend returns { data: { token, user } } format
-    return response.data.data;
+  // Register
+  async register(email: string, password: string, name: string): Promise<{ user: User }> {
+    const response = await apiClient.post<AuthResponse>('/auth/register', {
+      email,
+      password,
+      name,
+    });
+    return { user: response.data.data.user };
   },
 
-  async getProfile(): Promise<User> {
-    const response = await api.get('/auth/profile');
-    // Backend returns { data: {...} } format
-    return response.data.data;
-  },
-
+  // Logout
   async logout(): Promise<void> {
-    await api.post('/auth/logout');
+    await apiClient.post('auth/logout');
   },
 
-  saveAuthData(data: AuthResponse): void {
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+  // Get profile
+  async getProfile(): Promise<User> {
+    const response = await apiClient.get<{ data: User }>('auth/profile');
+    return response.data.data;
+  },
+
+  // Save auth data (only user info, no tokens)
+  saveAuthData(data: { user: User }): void {
     localStorage.setItem('user', JSON.stringify(data.user));
+    // NO TOKEN STORAGE - tokens are in httpOnly cookies!
   },
 
-  clearAuthData(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-  },
-
+  // Get stored user
   getStoredUser(): User | null {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -50,7 +59,14 @@ export const authService = {
     return null;
   },
 
+  // Check if authenticated (by checking if user exists in localStorage)
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('accessToken');
+    return !!this.getStoredUser();
+  },
+
+  // Clear auth data
+  clearAuthData(): void {
+    localStorage.removeItem('user');
+    // Cookies are cleared by backend on logout
   },
 };

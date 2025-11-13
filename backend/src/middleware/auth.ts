@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
   user?: {
     userId: string;
     email: string;
+    role?: string;
   };
 }
 
@@ -15,33 +16,42 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ): void => {
-  console.log('🔐 Auth middleware - Headers:', req.headers.authorization);
-  
-  const authHeader = req.headers['authorization'];
-
-  if (!authHeader) {
-    res.status(401).json({ error: 'No token' });
-    return;
-  }
-  
-  const token = authHeader.split(' ')[1];
+  // Get token from cookie instead of Authorization header
+  const token = req.cookies.accessToken;
 
   if (!token) {
-    res.status(401).json({ error: 'No token' });
+    res.status(401).json({ 
+      error: 'No token',
+      code: 'NO_TOKEN' 
+    });
     return;
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log('✅ Token verified:', decoded);
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
+      role: decoded.role,
     };
     next();
   } catch (error) {
-    console.error('❌ Token verification failed:', error);
-    res.status(401).json({ error: 'Invalid token' });
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ 
+        error: 'Token expired',
+        code: 'TOKEN_EXPIRED' 
+      });
+      return;
+    }
+    
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('❌ Token verification failed:', error);
+    }
+    
+    res.status(401).json({ 
+      error: 'Invalid token',
+      code: 'INVALID_TOKEN' 
+    });
     return;
   }
 };
@@ -53,8 +63,8 @@ export const optionalAuthMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // Get token from cookie
+  const token = req.cookies.accessToken;
 
   if (token) {
     try {
@@ -62,6 +72,7 @@ export const optionalAuthMiddleware = (
       req.user = {
         userId: decoded.userId,
         email: decoded.email,
+        role: decoded.role,
       };
     } catch (error) {
       // Token invalid, continue without user

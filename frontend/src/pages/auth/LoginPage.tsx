@@ -21,8 +21,10 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
+      // Token is now in httpOnly cookie automatically!
       navigate('/home');
     } catch (err: any) {
+      console.error('Login error:', err);
       setLocalError(err.response?.data?.error || 'Login failed');
     }
   };
@@ -42,7 +44,9 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
+            <label className="form-label" htmlFor="email">
+              Email
+            </label>
             <input
               id="email"
               type="email"
@@ -56,7 +60,9 @@ const LoginPage = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">Password</label>
+            <label className="form-label" htmlFor="password">
+              Password
+            </label>
             <input
               id="password"
               type="password"
@@ -69,17 +75,15 @@ const LoginPage = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn-primary"
-            disabled={isLoading}
-          >
+          <button type="submit" className="btn-primary" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div className="signup-prompt">
-          <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+          <p>
+            Don't have an account? <Link to="/register">Sign up</Link>
+          </p>
         </div>
 
         <div className="back-link">

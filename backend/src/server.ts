@@ -12,10 +12,13 @@ import { ResponseHandler } from './utils/response';
 import { Server } from 'http';  
 import { randomUUID } from 'crypto';
 import { apiLimiter } from './middleware/rateLimiting';
+import cookieParser from 'cookie-parser';
 
 const app: Express = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+
+app.use(cookieParser());
 
 // Security & CORS (FIRST)
 app.use(helmet());
@@ -81,7 +84,7 @@ app.use('/api/auth', (_req: Request, res: Response) => {
 });
 
 // Rate limiter (AFTER health/api root, BEFORE other routes)
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV === 'production') {
   app.use('/api/v1', apiLimiter);
 }
 

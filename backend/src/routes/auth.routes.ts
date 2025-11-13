@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { authMiddleware } from '../middleware/auth';
 
-const router = Router();
+
+const router: any = Router();
 
 // Public routes
 router.post('/register', authController.register);
@@ -11,5 +12,6 @@ router.post('/login', authController.login);
 // Protected routes
 router.get('/profile', authMiddleware, authController.getProfile);
 router.post('/logout', authMiddleware, authController.logout);
+router.post('/refresh', authController.refresh);
 
 export default router;

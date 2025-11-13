@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3001/api/v1';
+import { api } from './api';
 
 export interface Author {
   id: string;
@@ -19,16 +17,11 @@ export interface AuthorsResponse {
   data: Author[];
   pagination: {
     page: number;
-    per_page: number;  // Changed from 'limit'
+    per_page: number;
     total: number;
-    total_pages: number;  // Changed from 'totalPages'
+    total_pages: number;
   };
 }
-
-const getAuthToken = () => {
-  const token = localStorage.getItem('accessToken');
-  return token;
-};
 
 export const authorsService = {
   /**
@@ -36,19 +29,10 @@ export const authorsService = {
    */
   async getAll(params?: {
     page?: number;
-    per_page?: number;  // Changed from 'limit'
+    per_page?: number;
     role?: string;
   }): Promise<AuthorsResponse> {
-    const token = getAuthToken();
-    const config = token
-      ? { headers: { Authorization: `Bearer ${token}` } }
-      : {};
-
-    const response = await axios.get(`${API_URL}/authors`, {
-      ...config,
-      params,
-    });
-
+    const response = await api.get('/authors', { params });
     // Backend returns { data, pagination } format
     return response.data;
   },
@@ -57,12 +41,7 @@ export const authorsService = {
    * Get a single author by ID
    */
   async getById(id: string): Promise<Author> {
-    const token = getAuthToken();
-    const config = token
-      ? { headers: { Authorization: `Bearer ${token}` } }
-      : {};
-
-    const response = await axios.get(`${API_URL}/authors/${id}`, config);
+    const response = await api.get(`/authors/${id}`);
     // Extract from { data: {...} } wrapper
     return response.data.data;
   },
@@ -71,54 +50,25 @@ export const authorsService = {
    * Follow an author
    */
   async follow(authorId: string): Promise<void> {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    await axios.post(
-      `${API_URL}/authors/${authorId}/follow`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    await api.post(`/authors/${authorId}/follow`);
   },
 
   /**
    * Unfollow an author
    */
   async unfollow(authorId: string): Promise<void> {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    await axios.delete(`${API_URL}/authors/${authorId}/follow`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await api.delete(`/authors/${authorId}/follow`);
   },
 
   /**
    * Get authors that the current user is following
-   * ROUTE CHANGED: /authors/following/list -> /follows
    */
   async getFollowing(params?: {
     page?: number;
-    per_page?: number;  // Changed from 'limit'
+    per_page?: number;
   }): Promise<AuthorsResponse> {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    // IMPORTANT: Route changed from /authors/following/list to /follows
-    const response = await axios.get(`${API_URL}/follows`, {
-      headers: { Authorization: `Bearer ${token}` },
-      params,
-    });
-
-    // Backend returns { data: [...] } format
+    const response = await api.get('/follows', { params });
+    // Backend returns { data, pagination } format
     return response.data;
   },
 };
