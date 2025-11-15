@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { articlesService } from '../../services/articlesService';
@@ -9,9 +9,6 @@ import AuthorCard from '../../components/creator/AuthorCard';
 import '../../styles/homePage.css';
 
 const HomePage = () => {
-
-
-  
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
   
@@ -29,10 +26,12 @@ const HomePage = () => {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [authorsLoading, setAuthorsLoading] = useState(false);
 
-  //console.log('🔄 HomePage RENDER', { isAuthenticated, activeTab });
+  // Guard to prevent double execution in React Strict Mode
+  const hasInitialized = useRef(false);
 
+  console.log('🔄 HomePage RENDER', { isAuthenticated, activeTab });
 
-  // Hero carousel - TODO: Fetch from API or CMS
+  // Hero carousel
   const carouselSlides = [
     {
       image: 'https://images.unsplash.com/photo-1545048702-79362596cdc9?w=1200',
@@ -44,88 +43,91 @@ const HomePage = () => {
 
   // Redirect to landing if not authenticated
   useEffect(() => {
-    console.log('✅ Auth effect triggered in first useEffect - redirect to landing if not authenticated');
     if (!isAuthenticated) {
       navigate('/');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
-  // Memoized functions with useCallback to prevent infinite re-renders
-  const loadFollowedAuthorsFromBackend = useCallback(async () => {
-    try {
-      const ids = await getFollowedAuthors();
-      setFollowedAuthors(new Set(ids));
-    } catch (error) {
-      console.error('Failed to load followed authors from backend', error);
-      setFollowedAuthors(new Set());
-    }
-  }, []);
-
-  const fetchArticles = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await articlesService.getAll({
-        page: 1
-      });
-      setArticles(response.data);
-    } catch (err) {
-      console.error('Error fetching articles:', err);
-      setError('Failed to load articles. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loadSavedState = useCallback(() => {
-    const savedArticleIds = localStorage.getItem('savedArticles');
-    
-    if (savedArticleIds) {
-      setSavedArticles(new Set(JSON.parse(savedArticleIds)));
-    }
-  }, []);
-
-  const fetchAuthors = useCallback(async () => {
-    try {
-      setAuthorsLoading(true);
-      const response = await authorsService.getFollowing({
-        page: 1
-      });
-      setAuthors(response.data);
-    } catch (err) {
-      console.error('Error fetching authors:', err);
-      setAuthors([]);
-    } finally {
-      setAuthorsLoading(false);
-    }
-  }, []);
-
-  // Load initial data when authenticated - runs ONCE on mount when authenticated
+  // Load initial data when authenticated - RUNS ONCE
   useEffect(() => {
-    console.log('✅ Auth effect triggered - load initial data - runs once');
-    if (isAuthenticated) {
-      fetchArticles();
-      loadSavedState();
-      loadFollowedAuthorsFromBackend();
-    }
-  }, [isAuthenticated]);
+    // Prevent double execution in React Strict Mode
+    if (hasInitialized.current) return;
+    
+    if (!isAuthenticated) return;
+
+    hasInitialized.current = true;
+    console.log('✅ Loading initial data (runs once)');
+
+    // Load followed authors
+    const loadFollowedAuthors = async () => {
+      try {
+        const ids = await getFollowedAuthors();
+        setFollowedAuthors(new Set(ids));
+      } catch (error) {
+        console.error('Failed to load followed authors', error);
+        setFollowedAuthors(new Set());
+      }
+    };
+
+    // Load articles
+    const loadArticles = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await articlesService.getAll({ page: 1 });
+        setArticles(response.data);
+      } catch (err) {
+        console.error('Error fetching articles:', err);
+        setError('Failed to load articles. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Load saved articles from localStorage
+    const loadSavedArticles = () => {
+      const savedArticleIds = localStorage.getItem('savedArticles');
+      if (savedArticleIds) {
+        setSavedArticles(new Set(JSON.parse(savedArticleIds)));
+      }
+    };
+
+    // Execute all initial loads
+    loadFollowedAuthors();
+    loadArticles();
+    loadSavedArticles();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]); // Only depend on isAuthenticated
 
   // Auto-advance carousel
   useEffect(() => {
-    console.log('✅ Auth effect triggered - auto advance');
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [carouselSlides.length]);
 
-  // Fetch authors when Following tab is activated - uses stable fetchAuthors reference
+  // Fetch authors when Following tab is activated
   useEffect(() => {
-    console.log('✅ Auth effect triggered - fetch authors');
-    if (activeTab === 'following' && isAuthenticated) {
-      fetchAuthors();
-    }
-  }, [activeTab, isAuthenticated]);
+    if (activeTab !== 'following' || !isAuthenticated || authorsLoading) return;
+
+    const loadAuthors = async () => {
+      try {
+        setAuthorsLoading(true);
+        const response = await authorsService.getFollowing({ page: 1 });
+        setAuthors(response.data);
+      } catch (err) {
+        console.error('Error fetching authors:', err);
+        setAuthors([]);
+      } finally {
+        setAuthorsLoading(false);
+      }
+    };
+
+    loadAuthors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAuthenticated]); // Don't include authorsLoading or loadAuthors
 
   const saveState = (key: string, value: Set<number> | Set<string>) => {
     localStorage.setItem(key, JSON.stringify(Array.from(value as any)));
@@ -138,7 +140,10 @@ const HomePage = () => {
       } else {
         await authorsService.follow(authorId);
       }
-      fetchAuthors();
+      
+      // Refresh authors list
+      const response = await authorsService.getFollowing({ page: 1 });
+      setAuthors(response.data);
     } catch (error) {
       console.error('Error toggling follow:', error);
     }
@@ -189,28 +194,8 @@ const HomePage = () => {
         setFollowedAuthors(newFollowed);
       }
     } catch (error) {
-      console.error('Failed to update follow status', error);
+      console.error('Error toggling follow status:', error);
     }
-  };
-
-  const handleSave = (e: React.MouseEvent, article: Article) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedArticle(article);
-    setSaveModalOpen(true);
-    setSavedTags(['Must Read']);
-    setTagInput('');
-  };
-
-  const completeSave = () => {
-    if (selectedArticle) {
-      const newSaved = new Set(savedArticles);
-      newSaved.add(selectedArticle.id);
-      setSavedArticles(newSaved);
-      saveState('savedArticles', newSaved);
-    }
-    setSaveModalOpen(false);
-    setSelectedArticle(null);
   };
 
   const handleFavorite = (e: React.MouseEvent, articleId: number) => {
@@ -219,49 +204,75 @@ const HomePage = () => {
     console.log('Favorite article:', articleId);
   };
 
+  const handleSave = (e: React.MouseEvent, article: Article) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedArticle(article);
+    setSaveModalOpen(true);
+  };
+
   const addTag = (tag: string) => {
     if (!savedTags.includes(tag)) {
       setSavedTags([...savedTags, tag]);
     }
+    setTagInput('');
   };
 
   const removeTag = (tag: string) => {
     setSavedTags(savedTags.filter(t => t !== tag));
   };
 
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTagInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
       addTag(tagInput.trim());
-      setTagInput('');
     }
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const completeSave = () => {
+    if (selectedArticle) {
+      const newSaved = new Set(savedArticles);
+      newSaved.add(selectedArticle.id);
+      setSavedArticles(newSaved);
+      saveState('savedArticles', newSaved);
+      setSaveModalOpen(false);
+      setSelectedArticle(null);
+      setSavedTags(['Must Read']);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   const calculateReadTime = (content: string) => {
     const wordsPerMinute = 200;
-    const words = content.split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
+    const wordCount = content.split(/\s+/).length;
+    const minutes = Math.ceil(wordCount / wordsPerMinute);
     return `${minutes} min read`;
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return `${Math.floor(diffMins / 1440)}d ago`;
   };
 
-  const displayedArticles = loading ? [] : getFilteredArticles();
+  const displayedArticles = getFilteredArticles();
 
   return (
     <div className="home-page">
       {/* Header */}
       <header className="home-header">
         <div className="home-header__container">
-          <Link to="/home" className="home-header__logo">
-            শেকড় - The Kolkata Chronicle
-          </Link>
+          <div className="home-header__logo">
+            <Link to="/">শেকড়</Link>
+          </div>
           <div className="home-header__actions">
             <span className="home-header__language">কলকাতা ক্রনিকেল</span>
             {user && (
