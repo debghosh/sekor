@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { articlesService } from '../../services/articlesService';
@@ -9,6 +9,9 @@ import AuthorCard from '../../components/creator/AuthorCard';
 import '../../styles/homePage.css';
 
 const HomePage = () => {
+
+
+  
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
   
@@ -26,6 +29,9 @@ const HomePage = () => {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [authorsLoading, setAuthorsLoading] = useState(false);
 
+  console.log('🔄 HomePage RENDER', { isAuthenticated, activeTab });
+
+
   // Hero carousel - TODO: Fetch from API or CMS
   const carouselSlides = [
     {
@@ -38,44 +44,24 @@ const HomePage = () => {
 
   // Redirect to landing if not authenticated
   useEffect(() => {
+    console.log('✅ Auth effect triggered');
     if (!isAuthenticated) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchArticles();
-      loadSavedState();
-      loadFollowedAuthorsFromBackend();
-    }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    // Auto-advance carousel
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Effect to fetch authors when Following tab is activated
-  useEffect(() => {
-    if (activeTab === 'following' && isAuthenticated) {
-      fetchAuthors();
-    }
-  }, [activeTab, isAuthenticated]);
-
-  const loadFollowedAuthorsFromBackend = async () => {
+  // Memoized functions with useCallback to prevent infinite re-renders
+  const loadFollowedAuthorsFromBackend = useCallback(async () => {
     try {
       const ids = await getFollowedAuthors();
       setFollowedAuthors(new Set(ids));
     } catch (error) {
       console.error('Failed to load followed authors from backend', error);
+      setFollowedAuthors(new Set());
     }
-  };
+  }, []);
 
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -89,21 +75,17 @@ const HomePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadSavedState = () => {
+  const loadSavedState = useCallback(() => {
     const savedArticleIds = localStorage.getItem('savedArticles');
     
     if (savedArticleIds) {
       setSavedArticles(new Set(JSON.parse(savedArticleIds)));
     }
-  };
+  }, []);
 
-  const saveState = (key: string, value: Set<number> | Set<string>) => {
-    localStorage.setItem(key, JSON.stringify(Array.from(value as any)));
-  };
-
-  const fetchAuthors = async () => {
+  const fetchAuthors = useCallback(async () => {
     try {
       setAuthorsLoading(true);
       const response = await authorsService.getFollowing({
@@ -116,6 +98,37 @@ const HomePage = () => {
     } finally {
       setAuthorsLoading(false);
     }
+  }, []);
+
+  // Load initial data when authenticated - runs ONCE on mount when authenticated
+  useEffect(() => {
+    console.log('✅ Auth effect triggered');
+    if (isAuthenticated) {
+      fetchArticles();
+      loadSavedState();
+      loadFollowedAuthorsFromBackend();
+    }
+  }, [isAuthenticated]);
+
+  // Auto-advance carousel
+  useEffect(() => {
+    console.log('✅ Auth effect triggered');
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [carouselSlides.length]);
+
+  // Fetch authors when Following tab is activated - uses stable fetchAuthors reference
+  useEffect(() => {
+    console.log('✅ Auth effect triggered');
+    if (activeTab === 'following' && isAuthenticated) {
+      fetchAuthors();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  const saveState = (key: string, value: Set<number> | Set<string>) => {
+    localStorage.setItem(key, JSON.stringify(Array.from(value as any)));
   };
 
   const handleAuthorFollowToggle = async (authorId: string, isCurrentlyFollowing: boolean) => {
@@ -162,8 +175,6 @@ const HomePage = () => {
       navigate('/login');
       return;
     }
-
-    //console.log("HomePage → handleFollow authorId:", authorId, typeof authorId);
 
     try {
       if (followedAuthors.has(authorId)) {

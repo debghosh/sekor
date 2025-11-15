@@ -2,6 +2,7 @@ import { Response } from 'express';
 
 export interface SuccessResponse<T = any> {
   data: T;
+  message?: string;
   meta?: Record<string, any>;
   pagination?: PaginationMeta;
 }
@@ -23,16 +24,31 @@ export interface ErrorResponse {
 }
 
 export class ResponseHandler {
-  static success<T>(res: Response, data: T, meta?: Record<string, any>, pagination?: PaginationMeta): void {
+  // Flexible success method - works with old AND new calling patterns
+  static success<T>(
+    res: Response, 
+    data: T, 
+    messageOrPagination?: string | PaginationMeta,
+    pagination?: PaginationMeta
+  ): void {
     const response: SuccessResponse<T> = { data };
-    if (meta) response.meta = meta;
-    if (pagination) response.pagination = pagination;
+    
+    // Handle different calling patterns
+    if (typeof messageOrPagination === 'string') {
+      // New pattern: success(res, data, message, pagination)
+      response.message = messageOrPagination;
+      if (pagination) response.pagination = pagination;
+    } else if (messageOrPagination && typeof messageOrPagination === 'object') {
+      // Old pattern: success(res, data, pagination)
+      response.pagination = messageOrPagination;
+    }
+    
     res.status(200).json(response);
   }
 
-  static created<T>(res: Response, data: T, meta?: Record<string, any>): void {
+  static created<T>(res: Response, data: T, message?: string): void {
     const response: SuccessResponse<T> = { data };
-    if (meta) response.meta = meta;
+    if (message) response.message = message;
     res.status(201).json(response);
   }
 

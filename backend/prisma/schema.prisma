@@ -1,9 +1,9 @@
 // Prisma Schema for Sekor-BKC Production
 // Multi-content-type support: Articles, Podcasts, Vlogs, Photo Essays
+// Enhanced with Creator Portal features
 
 generator client {
   provider = "prisma-client-js"
-  //output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -20,6 +20,7 @@ enum Role {
   AUTHOR
   EDITOR
   ADMIN
+  CREATOR  // Added for creator portal
 }
 
 enum UserStatus {
@@ -33,6 +34,9 @@ enum ContentType {
   PODCAST
   VLOG
   PHOTO_ESSAY
+  VIDEO        // Added
+  AUDIO        // Added
+  MULTIMEDIA   // Added
 }
 
 enum ContentStatus {
@@ -40,6 +44,12 @@ enum ContentStatus {
   REVIEW
   PUBLISHED
   ARCHIVED
+  SUBMITTED           // Added for creator workflow
+  IN_REVIEW          // Added
+  CHANGES_REQUESTED  // Added
+  APPROVED           // Added
+  REJECTED           // Added
+  SCHEDULED          // Added
 }
 
 enum SubscriptionPlan {
@@ -66,6 +76,35 @@ enum EngagementType {
   SAVE
 }
 
+// ===== NEW CREATOR PORTAL ENUMS =====
+
+enum Language {
+  BENGALI
+  ENGLISH
+  BILINGUAL
+}
+
+enum Copyright {
+  CREATOR
+  CC_BY
+  CC_BY_SA
+  PUBLIC_DOMAIN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum ReactionType {
+  LOVE
+  INSIGHTFUL
+  NOSTALGIC
+  INSPIRING
+}
+
 // ============================================================================
 // USER MODELS
 // ============================================================================
@@ -75,7 +114,7 @@ model User {
   email                String         @unique
   name                 String
   passwordHash         String?        @map("password_hash")
-  role                 Role       @default(READER)
+  role                 Role           @default(READER)
   avatarUrl            String?        @map("avatar_url")
   bio                  String?
   emailVerified        Boolean        @default(false) @map("email_verified")
@@ -87,7 +126,7 @@ model User {
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
-  // Relations
+  // Existing Relations
   content              Content[]
   subscription         Subscription?
   followers            UserFollow[]   @relation("following")
@@ -97,6 +136,16 @@ model User {
   notifications        Notification[]
   comments             Comment[]
 
+  // NEW Creator Portal Relations
+  stories              Story[]              @relation("AuthoredStories")
+  coAuthoredStories    Story[]              @relation("CoAuthoredStories")
+  reviewedStories      Story[]              @relation("ReviewedStories")
+  media                Media[]
+  reactions            Reaction[]
+  storyComments        StoryComment[]
+  creatorAnalytics     CreatorAnalytics?
+  receivedSupport      ReaderSupport[]      @relation("CreatorSupport")
+  givenSupport         ReaderSupport[]      @relation("SupporterDonations")
 
   @@index([email])
   @@index([role])
@@ -119,7 +168,7 @@ model UserFollow {
 }
 
 // ============================================================================
-// CONTENT MODELS (Multi-type support)
+// CONTENT MODELS (Existing - Keep as is)
 // ============================================================================
 
 model Content {
@@ -137,7 +186,6 @@ model Content {
   views           Int           @default(0)
   
   // Type-specific data stored as JSONB
-  // Structure varies by content type (Article, Podcast, Vlog, Photo Essay)
   typeData        Json          @map("type_data")
   
   // SEO fields
@@ -166,11 +214,103 @@ model Content {
   @@map("content")
 }
 
+// ============================================================================
+// NEW STORY MODEL (Creator Portal Enhanced Content)
+// ============================================================================
+
+model Story {
+  id              String        @id @default(uuid())
+  
+  // Bilingual content
+  title           String
+  titleBn         String?       @map("title_bn")
+  titleEn         String?       @map("title_en")
+  
+  abstract        String        @db.Text
+  abstractBn      String?       @map("abstract_bn") @db.Text
+  abstractEn      String?       @map("abstract_en") @db.Text
+  
+  body            Json          // Quill Delta format
+  bodyBn          Json?         @map("body_bn")
+  bodyEn          Json?         @map("body_en")
+  
+  // Media
+  thumbnail       String?
+  thumbnailAlt    String?       @map("thumbnail_alt")
+  
+  // Categorization
+  categoryId      String        @map("category_id")
+  
+  // Publishing
+  status          ContentStatus @default(DRAFT)
+  publishedAt     DateTime?     @map("published_at")
+  scheduledFor    DateTime?     @map("scheduled_for")
+  expiryDate      DateTime?     @map("expiry_date")
+  
+  // Attribution
+  authorId        String        @map("author_id")
+  
+  // Metadata
+  slug            String        @unique
+  language        Language      @default(BILINGUAL)
+  contentType     ContentType   @default(ARTICLE)
+  readingTime     Int           @default(0) @map("reading_time") // minutes
+  wordCount       Int           @default(0) @map("word_count")
+  
+  // Rights
+  copyright       Copyright     @default(CREATOR)
+  allowComments   Boolean       @default(true) @map("allow_comments")
+  allowSharing    Boolean       @default(true) @map("allow_sharing")
+  isPremium       Boolean       @default(false) @map("is_premium")
+  
+  // Analytics aggregated
+  viewCount       Int           @default(0) @map("view_count")
+  uniqueVisitors  Int           @default(0) @map("unique_visitors")
+  reactionCount   Int           @default(0) @map("reaction_count")
+  commentCount    Int           @default(0) @map("comment_count")
+  shareCount      Int           @default(0) @map("share_count")
+  bookmarkCount   Int           @default(0) @map("bookmark_count")
+  
+  // Review
+  reviewNotes     String?       @map("review_notes") @db.Text
+  reviewerId      String?       @map("reviewer_id")
+  reviewedAt      DateTime?     @map("reviewed_at")
+  
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  category        Category              @relation(fields: [categoryId], references: [id])
+  author          User                  @relation("AuthoredStories", fields: [authorId], references: [id], onDelete: Cascade)
+  reviewer        User?                 @relation("ReviewedStories", fields: [reviewerId], references: [id])
+  coAuthors       User[]                @relation("CoAuthoredStories")
+  tags            StoryTag[]
+  locations       Location[]
+  media           StoryMedia[]
+  analytics       StoryAnalytics[]
+  reactions       Reaction[]
+  comments        StoryComment[]
+  sources         Source[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+  @@index([publishedAt])
+  @@index([reviewerId])
+  @@map("stories")
+}
+
+// ============================================================================
+// CATEGORY & TAG MODELS (Existing)
+// ============================================================================
+
 model Category {
   id          String    @id @default(uuid())
   name        String
   slug        String    @unique
-  nameBengali String?   @map("name_bengali") // Bengali translation
+  nameBengali String?   @map("name_bengali")
   description String?   @db.Text
   parentId    String?   @map("parent_id")
   order       Int       @default(0)
@@ -180,6 +320,7 @@ model Category {
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
   content     Content[]
+  stories     Story[]    // NEW
 
   @@index([slug])
   @@index([parentId])
@@ -194,6 +335,7 @@ model Tag {
 
   // Relations
   content   ContentTag[]
+  stories   StoryTag[]   // NEW
 
   @@index([slug])
   @@map("tags")
@@ -212,8 +354,258 @@ model ContentTag {
   @@map("content_tags")
 }
 
+// NEW: Story tags
+model StoryTag {
+  storyId   String  @map("story_id")
+  tagId     String  @map("tag_id")
+
+  story     Story   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, tagId])
+  @@index([storyId])
+  @@index([tagId])
+  @@map("story_tags")
+}
+
 // ============================================================================
-// ENGAGEMENT MODELS
+// NEW CREATOR PORTAL MODELS
+// ============================================================================
+
+// Media files
+model Media {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  
+  filename        String
+  originalName    String        @map("original_name")
+  mimeType        String        @map("mime_type")
+  size            Int           // bytes
+  type            MediaType
+  url             String
+  thumbnailUrl    String?       @map("thumbnail_url")
+  
+  // Cloud storage
+  storageProvider String?       @map("storage_provider")
+  storageKey      String?       @map("storage_key")
+  
+  // Metadata
+  altText         String?       @map("alt_text")
+  caption         String?       @db.Text
+  credit          String?
+  
+  // Dimensions
+  width           Int?
+  height          Int?
+  duration        Int?          // seconds for video/audio
+  
+  // Usage tracking
+  usageCount      Int           @default(0) @map("usage_count")
+  
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stories         StoryMedia[]
+
+  @@index([userId])
+  @@index([type])
+  @@map("media")
+}
+
+// Story-Media junction
+model StoryMedia {
+  id        String   @id @default(uuid())
+  storyId   String   @map("story_id")
+  mediaId   String   @map("media_id")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, mediaId])
+  @@index([storyId])
+  @@index([mediaId])
+  @@map("story_media")
+}
+
+// Location tagging
+model Location {
+  id           String   @id @default(uuid())
+  name         String
+  nameBn       String   @map("name_bn")
+  coordinates  Json?    // { lat, lng }
+  area         String?
+  isHistorical Boolean  @default(false) @map("is_historical")
+  description  String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  stories      Story[]
+
+  @@unique([name, area])
+  @@index([area])
+  @@map("locations")
+}
+
+// Story analytics (daily snapshots)
+model StoryAnalytics {
+  id              String   @id @default(uuid())
+  storyId         String   @map("story_id")
+  date            DateTime @db.Date
+  
+  // Views
+  views           Int      @default(0)
+  uniqueVisitors  Int      @default(0) @map("unique_visitors")
+  avgTimeOnPage   Int      @default(0) @map("avg_time_on_page") // seconds
+  completionRate  Float    @default(0) @map("completion_rate")
+  bounceRate      Float    @default(0) @map("bounce_rate")
+  avgScrollDepth  Float    @default(0) @map("avg_scroll_depth")
+  
+  // Interactions
+  reactions       Json     @default("{}") // { love: 0, insightful: 0, etc }
+  comments        Int      @default(0)
+  shares          Json     @default("{}") // { facebook: 0, twitter: 0, etc }
+  bookmarks       Int      @default(0)
+  
+  // Demographics
+  topLocations    Json     @default("[]") @map("top_locations")
+  devices         Json     @default("{}")
+  referrals       Json     @default("{}")
+  languages       Json     @default("{}")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, date])
+  @@index([storyId])
+  @@index([date])
+  @@map("story_analytics")
+}
+
+// Creator analytics
+model CreatorAnalytics {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  date               DateTime @db.Date
+  
+  totalStories       Int      @default(0) @map("total_stories")
+  publishedStories   Int      @default(0) @map("published_stories")
+  totalViews         Int      @default(0) @map("total_views")
+  totalReactions     Int      @default(0) @map("total_reactions")
+  totalComments      Int      @default(0) @map("total_comments")
+  totalShares        Int      @default(0) @map("total_shares")
+  
+  followers          Int      @default(0)
+  followerGrowth     Int      @default(0) @map("follower_growth")
+  
+  earnings           Float    @default(0)
+  supportCount       Int      @default(0) @map("support_count")
+  avgSupport         Float    @default(0) @map("avg_support")
+  
+  avgEngagementRate  Float    @default(0) @map("avg_engagement_rate")
+  avgCompletionRate  Float    @default(0) @map("avg_completion_rate")
+  
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("creator_analytics")
+}
+
+// Reactions
+model Reaction {
+  id        String       @id @default(uuid())
+  storyId   String       @map("story_id")
+  userId    String?      @map("user_id")
+  type      ReactionType
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  story     Story        @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([storyId, userId, type])
+  @@index([storyId])
+  @@index([userId])
+  @@map("reactions")
+}
+
+// Story comments
+model StoryComment {
+  id         String         @id @default(uuid())
+  storyId    String         @map("story_id")
+  userId     String?        @map("user_id")
+  content    String         @db.Text
+  isApproved Boolean        @default(false) @map("is_approved")
+  isPinned   Boolean        @default(false) @map("is_pinned")
+  parentId   String?        @map("parent_id")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  story      Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parent     StoryComment?  @relation("StoryCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    StoryComment[] @relation("StoryCommentReplies")
+
+  @@index([storyId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("story_comments")
+}
+
+// Sources/Citations
+model Source {
+  id           String    @id @default(uuid())
+  storyId      String    @map("story_id")
+  type         String
+  title        String
+  author       String?
+  url          String?
+  dateAccessed DateTime? @map("date_accessed")
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  story        Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@map("sources")
+}
+
+// Reader support/donations
+model ReaderSupport {
+  id            String   @id @default(uuid())
+  storyId       String?  @map("story_id")
+  creatorId     String   @map("creator_id")
+  supporterId   String?  @map("supporter_id")
+  
+  amount        Float
+  currency      String   @default("INR")
+  message       String?  @db.Text
+  isAnonymous   Boolean  @default(false) @map("is_anonymous")
+  
+  paymentId     String?  @unique @map("payment_id")
+  paymentStatus String   @default("pending") @map("payment_status")
+  paymentMethod String?  @map("payment_method")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  creator       User     @relation("CreatorSupport", fields: [creatorId], references: [id], onDelete: Cascade)
+  supporter     User?    @relation("SupporterDonations", fields: [supporterId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId])
+  @@index([supporterId])
+  @@index([storyId])
+  @@map("reader_support")
+}
+
+// ============================================================================
+// ENGAGEMENT MODELS (Existing - Keep as is)
 // ============================================================================
 
 model SavedContent {
@@ -254,7 +646,7 @@ model Comment {
   id        String   @id @default(uuid())
   contentId String   @map("content_id")
   userId    String   @map("user_id")
-  parentId  String?  @map("parent_id") // For nested comments
+  parentId  String?  @map("parent_id")
   text      String   @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -272,7 +664,7 @@ model Comment {
 }
 
 // ============================================================================
-// SUBSCRIPTION MODELS
+// SUBSCRIPTION MODELS (Existing - Keep as is)
 // ============================================================================
 
 model Subscription {
@@ -280,7 +672,7 @@ model Subscription {
   userId                String               @unique @map("user_id")
   plan                  SubscriptionPlan     @default(FREE)
   frequency             SubscriptionFrequency?
-  interests             String[] // Category slugs or content types
+  interests             String[]
   stripeCustomerId      String?              @unique @map("stripe_customer_id")
   stripeSubscriptionId  String?              @unique @map("stripe_subscription_id")
   status                SubscriptionStatus   @default(ACTIVE)
@@ -290,7 +682,6 @@ model Subscription {
   createdAt             DateTime             @default(now()) @map("created_at")
   updatedAt             DateTime             @updatedAt @map("updated_at")
 
-  // Relations
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -300,7 +691,7 @@ model Subscription {
 }
 
 // ============================================================================
-// NOTIFICATION MODELS
+// NOTIFICATION MODELS (Existing - Keep as is)
 // ============================================================================
 
 model Notification {

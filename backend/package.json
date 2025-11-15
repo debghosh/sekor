@@ -4,6 +4,9 @@
   "description": "SEKOR-BKC REST API - শেকড় Backend",
   "private": true,
   "main": "dist/server.js",
+  "prisma": {
+    "seed": "tsx prisma/seed-creator.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
@@ -36,6 +39,7 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "pg": "^8.11.3",
     "winston": "^3.11.0",
     "zod": "^3.25.76"
@@ -50,6 +54,7 @@
     "@types/jest": "^29.5.11",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.0.0",
     "@types/node": "^20.10.6",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^6.16.0",

@@ -2,6 +2,8 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cors from 'cors';
 import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
+import storiesRoutes from './routes/stories.routes';
+import mediaRoutes from './routes/media.routes';
 import { requestIdMiddleware } from './middleware/requestId';
 import { deprecationMiddleware } from './middleware/deprecation';
 import authRoutes from './routes/auth.routes';
@@ -93,6 +95,13 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/articles', articlesRoutes);
 app.use('/api/v1/authors', authorsRoutes);
 app.use('/api/v1/follows', followsRoutes);
+
+// NEW Creator Portal routes
+app.use('/api/v1/stories', storiesRoutes);
+app.use('/api/v1/media', mediaRoutes);
+
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
 // 404 handler (AFTER all routes)
 app.use((req: Request, res: Response) => {
