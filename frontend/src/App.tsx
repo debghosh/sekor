@@ -27,8 +27,9 @@ function App() {
   const initialize = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    useAuthStore.getState().initialize();
+  }, 
+  []);
 
   return (
     <BrowserRouter>

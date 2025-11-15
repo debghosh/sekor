@@ -29,7 +29,7 @@ const HomePage = () => {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [authorsLoading, setAuthorsLoading] = useState(false);
 
-  console.log('🔄 HomePage RENDER', { isAuthenticated, activeTab });
+  //console.log('🔄 HomePage RENDER', { isAuthenticated, activeTab });
 
 
   // Hero carousel - TODO: Fetch from API or CMS
@@ -44,7 +44,7 @@ const HomePage = () => {
 
   // Redirect to landing if not authenticated
   useEffect(() => {
-    console.log('✅ Auth effect triggered');
+    console.log('✅ Auth effect triggered in first useEffect - redirect to landing if not authenticated');
     if (!isAuthenticated) {
       navigate('/');
     }
@@ -102,7 +102,7 @@ const HomePage = () => {
 
   // Load initial data when authenticated - runs ONCE on mount when authenticated
   useEffect(() => {
-    console.log('✅ Auth effect triggered');
+    console.log('✅ Auth effect triggered - load initial data - runs once');
     if (isAuthenticated) {
       fetchArticles();
       loadSavedState();
@@ -112,7 +112,7 @@ const HomePage = () => {
 
   // Auto-advance carousel
   useEffect(() => {
-    console.log('✅ Auth effect triggered');
+    console.log('✅ Auth effect triggered - auto advance');
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
     }, 5000);
@@ -121,7 +121,7 @@ const HomePage = () => {
 
   // Fetch authors when Following tab is activated - uses stable fetchAuthors reference
   useEffect(() => {
-    console.log('✅ Auth effect triggered');
+    console.log('✅ Auth effect triggered - fetch authors');
     if (activeTab === 'following' && isAuthenticated) {
       fetchAuthors();
     }
