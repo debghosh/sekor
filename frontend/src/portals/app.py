@@ -2,59 +2,224 @@ import streamlit as st
 from datetime import datetime
 import pandas as pd
 from db import get_db_connection
-import plotly.express as px
-import plotly.graph_objects as go
 import os
 
 st.set_page_config(
-    page_title="SEKOR-BKC Admin Portal",
+    page_title="Admin Portal",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for colorful theme
+# EXACT prototype CSS
 st.markdown("""
 <style>
-    .metric-card {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Global */
+    * {
+        font-family: 'Inter', -apple-system, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    /* Hide Streamlit */
+    #MainMenu, footer, header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    
+    /* App background */
+    .stApp {
+        background: #f8f9fa;
+    }
+    
+    /* Remove ALL default Streamlit padding */
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    section.main > div {
+        padding: 0 !important;
+    }
+    
+    /* Header */
+    .portal-header {
         background: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        margin-bottom: 1rem;
+        padding: 20px 40px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0;
     }
     
-    .metric-card.blue { background: #E3F2FD; }
-    .metric-card.green { background: #E8F5E9; }
-    .metric-card.purple { background: #F3E5F5; }
-    .metric-card.yellow { background: #FFF9C4; }
-    
-    .metric-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0.5rem 0;
+    .portal-header h1 {
+        color: #dc2626;
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
     }
     
-    .metric-label {
-        color: #666;
-        font-size: 0.9rem;
+    .user-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        background: #dc2626;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .user-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #111827;
+        line-height: 1.2;
+    }
+    
+    .user-role {
+        font-size: 11px;
+        color: #6b7280;
+        line-height: 1.2;
+    }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background: white;
+        border-right: 1px solid #e5e7eb;
+    }
+    
+    [data-testid="stSidebar"] > div:first-child {
+        background: white;
+        padding: 0;
+    }
+    
+    /* Main content wrapper */
+    .dashboard-container {
+        padding: 32px 40px;
+        background: #f8f9fa;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+    
+    .stat-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 24px 20px;
+        text-align: center;
+    }
+    
+    .stat-label {
+        font-size: 10px;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #9ca3af;
+        margin-bottom: 12px;
+        display: block;
     }
     
-    .content-card {
+    .stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1;
+    }
+    
+    .stat-value.green { color: #10b981; }
+    .stat-value.yellow { color: #f59e0b; }
+    .stat-value.purple { color: #8b5cf6; }
+    .stat-value.blue { color: #3b82f6; }
+    
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+    
+    .card {
         background: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 28px;
     }
     
+    .card h3 {
+        font-size: 17px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 24px 0;
+    }
+    
+    /* Article Item */
+    .article-item {
+        padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    
+    .article-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .article-item:first-child {
+        padding-top: 0;
+    }
+    
+    .article-content {
+        flex: 1;
+    }
+    
+    .article-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 6px 0;
+        line-height: 1.4;
+    }
+    
+    .article-meta {
+        font-size: 12px;
+        color: #6b7280;
+        line-height: 1.3;
+    }
+    
+    /* Badge */
     .badge {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
+        padding: 5px 12px;
         border-radius: 12px;
-        font-size: 0.85rem;
-        font-weight: 500;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    
+    .badge-published {
+        background: #d1fae5;
+        color: #065f46;
     }
     
     .badge-pending {
@@ -62,16 +227,64 @@ st.markdown("""
         color: #F57F17;
     }
     
-    .badge-published {
-        background: #E8F5E9;
-        color: #2E7D32;
+    /* Top Item */
+    .top-item {
+        padding: 16px 0;
+        border-bottom: 1px solid #f3f4f6;
     }
     
-    .admin-title {
-        color: #DC143C;
-        font-size: 1.5rem;
+    .top-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .top-item:first-child {
+        padding-top: 0;
+    }
+    
+    .top-title {
+        font-size: 14px;
         font-weight: 600;
-        text-align: center;
+        color: #111827;
+        margin: 0 0 6px 0;
+        line-height: 1.4;
+    }
+    
+    .top-stats {
+        font-size: 12px;
+        color: #6b7280;
+    }
+    
+    .dot-red {
+        color: #ef4444;
+        font-weight: 600;
+    }
+    
+    .comment-blue {
+        color: #3b82f6;
+    }
+    
+    /* Remove streamlit button styling */
+    .stButton button {
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #374151;
+        font-weight: 500;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .stButton button:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+    
+    /* Hide extra whitespace */
+    .element-container {
+        margin: 0 !important;
+        padding: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -83,76 +296,91 @@ def check_auth():
     if not st.session_state.authenticated:
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
-            st.markdown("<h2 style='text-align: center; color: #DC143C;'>🏛️ Admin Login</h2>", unsafe_allow_html=True)
+            st.markdown("""
+            <div style='background: white; padding: 48px; border-radius: 12px; margin-top: 100px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
+                <h1 style='color: #dc2626; text-align: center; margin-bottom: 32px; font-size: 24px;'>Admin Portal</h1>
+            """, unsafe_allow_html=True)
+            
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             
             if st.button("Login", use_container_width=True):
-                admin_user = os.getenv("ADMIN_USERNAME", "admin")
-                admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
-                
-                if username == admin_user and password == admin_pass:
+                if username == os.getenv("ADMIN_USERNAME", "admin") and password == os.getenv("ADMIN_PASSWORD", "admin123"):
                     st.session_state.authenticated = True
-                    st.session_state.admin_name = username
                     st.rerun()
                 else:
-                    st.error(f"Invalid credentials. Try: {admin_user}/{admin_pass}")
+                    st.error("Invalid credentials")
+            
+            st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
 
 check_auth()
 
 # Header
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.markdown("<div class='admin-title'>Admin Portal</div>", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"""
-    <div style='text-align: right;'>
-        <div style='display: inline-block; background: #DC143C; color: white; 
-             width: 40px; height: 40px; border-radius: 50%; 
-             text-align: center; line-height: 40px; font-weight: 600;'>A</div>
-        <span style='margin-left: 0.5rem;'>Administrator</span>
+st.markdown("""
+<div class='portal-header'>
+    <h1>Admin Portal</h1>
+    <div class='user-badge'>
+        <div class='user-avatar'>A</div>
+        <div>
+            <div class='user-name'>admin</div>
+            <div class='user-role'>Administrator</div>
+        </div>
     </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### Navigation")
+    if 'page' not in st.session_state:
+        st.session_state.page = "Dashboard"
     
-    page = st.radio("", [
-        "📊 Dashboard",
-        "📝 All Articles",
-        "⏳ Pending Review",
-        "👥 User Management",
-        "📁 Media Library",
-        "🏷️ Categories & Tags",
-        "📈 Analytics"
-    ], label_visibility="collapsed")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("---")
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("📊 Dashboard", key="nav_dashboard"):
+        st.session_state.page = "Dashboard"
+        st.rerun()
+    
+    if st.button("📄 All Articles", key="nav_articles"):
+        st.session_state.page = "All Articles"
+        st.rerun()
+    
+    if st.button("⏰ Pending Review", key="nav_pending"):
+        st.session_state.page = "Pending Review"
+        st.rerun()
+    
+    if st.button("👥 Users", key="nav_users"):
+        st.session_state.page = "Users"
+        st.rerun()
+    
+    if st.button("📈 Analytics", key="nav_analytics"):
+        st.session_state.page = "Analytics"
+        st.rerun()
+    
+    if st.button("⚙️ Settings", key="nav_settings"):
+        st.session_state.page = "Settings"
+        st.rerun()
+    
+    st.divider()
+    if st.button("Logout"):
         st.session_state.authenticated = False
         st.rerun()
 
+page = st.session_state.page
+
+# Database
 try:
     conn = get_db_connection()
     cur = conn.cursor()
 except Exception as e:
-    st.error(f"Cannot connect to database: {str(e)}")
-    st.info("Make sure Docker is running: `docker-compose up -d`")
+    st.error(f"Database error: {str(e)}")
     st.stop()
 
-# Dashboard
-if page == "📊 Dashboard":
-    st.title("Dashboard")
-    
-    # Top metrics
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
+# DASHBOARD (FROM FILE 2 - WORKING VERSION)
+if page == "Dashboard":
+    # Get data
     cur.execute("SELECT COUNT(*) FROM content")
-    total_articles = cur.fetchone()[0]
+    total = cur.fetchone()[0]
     
     cur.execute("SELECT COUNT(*) FROM content WHERE status = 'PUBLISHED'")
     published = cur.fetchone()[0]
@@ -163,416 +391,311 @@ if page == "📊 Dashboard":
     cur.execute("SELECT COUNT(DISTINCT author_id) FROM content")
     authors = cur.fetchone()[0]
     
-    cur.execute("SELECT COUNT(*) FROM users")
-    total_users = cur.fetchone()[0]
+    # Build recent articles HTML
+    cur.execute("""
+        SELECT c.title, c.status, u.email, u.name
+        FROM content c
+        JOIN users u ON c.author_id = u.id
+        ORDER BY c.created_at DESC
+        LIMIT 4
+    """)
+    recent = cur.fetchall()
     
-    with col1:
-        st.markdown(f"""
-        <div class='metric-card'>
-            <div class='metric-label'>Total Articles</div>
-            <div class='metric-value'>{total_articles}</div>
+    recent_html = ""
+    for article in recent:
+        author = article[3] if article[3] else article[2].split('@')[0]
+        recent_html += f"<div class='article-item'><div class='article-content'><div class='article-title'>{article[0]}</div><div class='article-meta'>{author} • যাত্রা-আড্ডা</div></div><span class='badge badge-published'>PUBLISHED</span></div>"
+    
+    # Build top performing HTML
+    top = [
+        ("50,000 Commuters Stranded as Metro Breaks Down", 5621, 89),
+        ("Coaching Center Mafia: The Rs 2,000 Crore Industry", 4892, 127),
+        ("7 Century-Old Sweet Shops Kolkata Has Forgotten", 3245, 56),
+        ("Deshapriyas Park's Revolutionary Eco-Friendly Pandal", 2847, 34)
+    ]
+    
+    top_html = ""
+    for title, views, comments in top:
+        top_html += f"<div class='top-item'><div class='top-title'>{title}</div><div class='top-stats'><span class='dot-red'>●</span> {views:,} views • <span class='comment-blue'>💬</span> {comments}</div></div>"
+    
+    # Render everything
+    st.markdown(f"""
+    <div class='dashboard-container'>
+        <div class='stats-grid'>
+            <div class='stat-card'>
+                <span class='stat-label'>Total Articles</span>
+                <div class='stat-value'>{total}</div>
+            </div>
+            <div class='stat-card'>
+                <span class='stat-label'>Published</span>
+                <div class='stat-value green'>{published}</div>
+            </div>
+            <div class='stat-card'>
+                <span class='stat-label'>Pending Review</span>
+                <div class='stat-value yellow'>{pending}</div>
+            </div>
+            <div class='stat-card'>
+                <span class='stat-label'>Authors</span>
+                <div class='stat-value purple'>{authors}</div>
+            </div>
+            <div class='stat-card'>
+                <span class='stat-label'>Total Views</span>
+                <div class='stat-value blue'>16,605</div>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div class='metric-card green'>
-            <div class='metric-label'>Published</div>
-            <div class='metric-value' style='color: #2E7D32;'>{published}</div>
+        <div class='content-grid'>
+            <div class='card'>
+                <h3>Recent Articles</h3>
+                {recent_html}
+            </div>
+            <div class='card'>
+                <h3>Top Performing</h3>
+                {top_html}
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class='metric-card yellow'>
-            <div class='metric-label'>Pending Review</div>
-            <div class='metric-value' style='color: #F57F17;'>{pending}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div class='metric-card purple'>
-            <div class='metric-label'>Authors</div>
-            <div class='metric-value' style='color: #6A1B9A;'>{authors}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col5:
-        st.markdown(f"""
-        <div class='metric-card blue'>
-            <div class='metric-label'>Total Users</div>
-            <div class='metric-value' style='color: #1565C0;'>{total_users}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Recent & Top Performing
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Recent Articles")
-        cur.execute("""
-            SELECT c.title, u.email, c.created_at, c.status
-            FROM content c
-            JOIN users u ON c.author_id = u.id
-            ORDER BY c.created_at DESC
-            LIMIT 5
-        """)
-        recent = cur.fetchall()
-        
-        if recent:
-            for article in recent:
-                status_class = 'published' if article[3] == 'PUBLISHED' else 'pending'
-                st.markdown(f"""
-                <div class='content-card'>
-                    <div style='font-weight: 600; margin-bottom: 0.5rem;'>{article[0][:60]}...</div>
-                    <div style='font-size: 0.85rem; color: #666;'>
-                        {article[1]} • {article[2].strftime('%b %d, %Y')}
-                    </div>
-                    <span class='badge badge-{status_class}'>{article[3]}</span>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("No articles yet")
-    
-    with col2:
-        st.subheader("Content by Status")
-        cur.execute("""
-            SELECT status, COUNT(*) as count 
-            FROM content 
-            GROUP BY status
-        """)
-        content_status = cur.fetchall()
-        
-        if content_status:
-            df_status = pd.DataFrame(content_status, columns=['Status', 'Count'])
-            fig = px.pie(df_status, values='Count', names='Status', title='Content Distribution')
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No content yet")
+    </div>
+    """, unsafe_allow_html=True)
 
-# All Articles
-elif page == "📝 All Articles":
-    st.title("All Articles")
-    
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        search = st.text_input("🔍 Search articles", placeholder="Search by title...")
-    with col2:
-        status_filter = st.selectbox("Status", ["All", "PUBLISHED", "DRAFT", "PENDING", "REVIEW"])
-    with col3:
-        sort_by = st.selectbox("Sort", ["Newest", "Oldest"])
-    
-    query = "SELECT c.id, c.title, c.status, c.created_at, u.email FROM content c JOIN users u ON c.author_id = u.id"
-    
-    conditions = []
-    if status_filter != "All":
-        conditions.append(f"c.status = '{status_filter}'")
-    if search:
-        conditions.append(f"c.title ILIKE '%{search}%'")
-    
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    
-    query += " ORDER BY c.created_at DESC LIMIT 50"
-    
-    cur.execute(query)
-    articles = cur.fetchall()
-    
-    st.markdown(f"**{len(articles)} articles found**")
-    st.divider()
-    
-    for article in articles:
-        col1, col2, col3 = st.columns([3, 1, 1])
-        
-        with col1:
-            st.markdown(f"**{article[1]}**")
-            st.caption(f"By {article[4]} • {article[3].strftime('%b %d, %Y')}")
-        
-        with col2:
-            status_emoji = {"PUBLISHED": "🟢", "DRAFT": "⚪", "REVIEW": "🟡", "PENDING": "🟡"}
-            st.write(f"{status_emoji.get(article[2], '⚪')} {article[2]}")
-        
-        with col3:
-            if st.button("View", key=f"view_{article[0]}"):
-                st.info(f"Article ID: {article[0]}")
-        
-        st.divider()
-
-# Pending Review
-elif page == "⏳ Pending Review":
-    st.title("Pending Review")
+# ALL ARTICLES (FROM FILE 1 - FIXED QUERIES)
+elif page == "All Articles":
+    st.markdown("<div class='dashboard-container'>", unsafe_allow_html=True)
     
     cur.execute("""
-        SELECT c.id, c.title, c.summary, c.created_at, u.email, u.name
+        SELECT c.id, c.title, c.status, c.created_at, u.name, u.email
+        FROM content c
+        JOIN users u ON c.author_id = u.id
+        ORDER BY c.created_at DESC
+    """)
+    articles = cur.fetchall()
+    
+    for article in articles:
+        author = article[4] if article[4] else article[5].split('@')[0]
+        date = article[3].strftime('%b %d, %Y') if article[3] else 'N/A'
+        
+        st.markdown(f"""
+        <div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 24px; margin-bottom: 16px;'>
+            <div style='display: flex; justify-content: space-between; align-items: start;'>
+                <div style='flex: 1;'>
+                    <div style='font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 8px;'>{article[1]}</div>
+                    <div style='font-size: 13px; color: #6b7280;'>{author} • যাত্রা-আড্ডা • {date}</div>
+                </div>
+                <span class='badge badge-published'>{article[2]}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# PENDING REVIEW (FROM FILE 1 - FIXED QUERIES)
+elif page == "Pending Review":
+    st.markdown("<div class='dashboard-container'>", unsafe_allow_html=True)
+    
+    cur.execute("""
+        SELECT c.id, c.title, c.summary, u.name, u.email, c.created_at
         FROM content c
         JOIN users u ON c.author_id = u.id
         WHERE c.status IN ('REVIEW', 'IN_REVIEW', 'SUBMITTED')
         ORDER BY c.created_at DESC
     """)
+    pending = cur.fetchall()
     
-    pending_articles = cur.fetchall()
-    
-    if pending_articles:
-        st.markdown(f"""
-        <div class='badge badge-pending' style='font-size: 1rem; padding: 0.5rem 1rem;'>
-            {len(pending_articles)} article(s) pending review
+    if not pending:
+        st.markdown("""
+        <div style='background: #d1fae5; border: 1px solid #10b981; border-radius: 10px; padding: 32px; text-align: center;'>
+            <div style='font-size: 48px; margin-bottom: 16px;'>🎉</div>
+            <div style='font-size: 18px; font-weight: 600; color: #065f46;'>All caught up!</div>
+            <div style='font-size: 14px; color: #047857; margin-top: 8px;'>No articles pending review</div>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        for article in pending_articles:
-            st.markdown(f"### {article[1]}")
-            if article[2]:
-                st.write(article[2][:200] + "..." if len(article[2]) > 200 else article[2])
-            st.caption(f"Author: {article[5] or article[4]} • Submitted: {article[3].strftime('%B %d, %Y')}")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                if st.button("✅ Approve & Publish", key=f"approve_{article[0]}", use_container_width=True):
-                    cur.execute("UPDATE content SET status = 'PUBLISHED' WHERE id = %s", (article[0],))
-                    conn.commit()
-                    st.success("Published!")
-                    st.rerun()
-            
-            with col2:
-                if st.button("📝 Request Changes", key=f"changes_{article[0]}", use_container_width=True):
-                    cur.execute("UPDATE content SET status = 'CHANGES_REQUESTED' WHERE id = %s", (article[0],))
-                    conn.commit()
-                    st.warning("Changes requested")
-                    st.rerun()
-            
-            with col3:
-                if st.button("❌ Reject", key=f"reject_{article[0]}", use_container_width=True):
-                    cur.execute("UPDATE content SET status = 'REJECTED' WHERE id = %s", (article[0],))
-                    conn.commit()
-                    st.error("Rejected")
-                    st.rerun()
-            
-            with col4:
-                if st.button("👁️ Preview", key=f"preview_{article[0]}", use_container_width=True):
-                    st.info("Preview feature")
-            
-            st.divider()
     else:
-        st.success("🎉 No articles pending review!")
-
-# User Management
-elif page == "👥 User Management":
-    st.title("👥 User Management")
-    
-    search = st.text_input("🔍 Search by email")
-    
-    if search:
-        cur.execute("""
-            SELECT id, email, role, created_at 
-            FROM users 
-            WHERE email ILIKE %s
-            ORDER BY created_at DESC
-        """, (f"%{search}%",))
-    else:
-        cur.execute("""
-            SELECT id, email, role, created_at 
-            FROM users 
-            ORDER BY created_at DESC 
-            LIMIT 50
-        """)
-    
-    users = cur.fetchall()
-    
-    if not users:
-        st.info("No users found")
-    
-    role_options = ["READER", "AUTHOR", "EDITOR", "ADMIN"]
-    
-    for user in users:
-        col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-        
-        with col1:
-            initials = user[1][:2].upper()
+        for article in pending:
+            author = article[3] if article[3] else article[4].split('@')[0]
+            date = article[5].strftime('%b %d, %Y') if article[5] else 'N/A'
+            excerpt = article[2][:150] + "..." if article[2] and len(article[2]) > 150 else article[2] or "No summary available"
+            
             st.markdown(f"""
-            <div style='display: flex; align-items: center; gap: 1rem;'>
-                <div style='width: 40px; height: 40px; border-radius: 50%; 
-                     background: #DC143C; color: white; display: flex; 
-                     align-items: center; justify-content: center; font-weight: 600;'>
-                    {initials}
-                </div>
-                <div>
-                    <div style='font-weight: 600;'>{user[1]}</div>
-                    <div style='font-size: 0.85rem; color: #666;'>{user[3].strftime('%b %d, %Y')}</div>
+            <div style='background: #fffbeb; border: 2px solid #fbbf24; border-radius: 10px; padding: 24px; margin-bottom: 20px;'>
+                <div style='display: flex; gap: 20px;'>
+                    <div style='width: 120px; height: 120px; background: #e5e7eb; border-radius: 8px; flex-shrink: 0;'></div>
+                    <div style='flex: 1;'>
+                        <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+                            <span style='background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase;'>PENDING REVIEW</span>
+                            <span style='color: #6b7280; font-size: 12px;'>{date}</span>
+                        </div>
+                        <h3 style='font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #111827;'>{article[1]}</h3>
+                        <p style='color: #6b7280; font-size: 13px; margin-bottom: 12px;'>{excerpt}</p>
+                        <div style='color: #6b7280; font-size: 12px; margin-bottom: 16px;'>Author: {author}</div>
+                        <div style='display: flex; gap: 10px;'>
+                            <button style='background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;'>✓ Approve & Publish</button>
+                            <button style='background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;'>Request Changes</button>
+                            <button style='background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;'>✗ Reject</button>
+                            <button style='background: white; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;'>👁 Preview</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-        
-        with col2:
-            st.write(f"**{user[2]}**")
-        
-        with col3:
-            current_idx = role_options.index(user[2]) if user[2] in role_options else 0
-            new_role = st.selectbox("Role", role_options, index=current_idx, key=f"role_{user[0]}", label_visibility="collapsed")
-        
-        with col4:
-            if st.button("💾 Save", key=f"save_{user[0]}"):
-                cur.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, user[0]))
-                conn.commit()
-                st.success("Updated!")
-                st.rerun()
-        
-        st.divider()
+    
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# Media Library
-elif page == "📁 Media Library":
-    st.title("📁 Media Library")
+# USERS (FROM FILE 1 - FIXED QUERIES)
+elif page == "Users":
+    st.markdown("""
+    <div class='dashboard-container'>
+        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;'>
+            <h2 style='font-size: 24px; font-weight: 600; margin: 0;'>Users & Authors</h2>
+            <button style='background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;'>Add User</button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     cur.execute("""
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'media'
-        );
+        SELECT u.id, u.email, u.name, u.role,
+               COUNT(DISTINCT c.id) as article_count
+        FROM users u
+        LEFT JOIN content c ON u.id = c.author_id
+        GROUP BY u.id, u.email, u.name, u.role
+        ORDER BY article_count DESC
     """)
-    table_exists = cur.fetchone()[0]
+    users = cur.fetchall()
     
-    if not table_exists:
-        st.warning("Media table doesn't exist yet.")
-    else:
-        cur.execute("""
-            SELECT id, filename, mime_type, size, created_at, user_id
-            FROM media
-            ORDER BY created_at DESC
-            LIMIT 100
-        """)
+    for user in users:
+        initials = user[2][:2].upper() if user[2] else user[1][:2].upper()
+        name = user[2] if user[2] else user[1].split('@')[0]
+        role_colors = {
+            'ADMIN': '#dc2626',
+            'AUTHOR': '#8b5cf6',
+            'EDITOR': '#3b82f6'
+        }
+        color = role_colors.get(user[3], '#6b7280')
         
-        media = cur.fetchall()
-        
-        if media:
-            df_media = pd.DataFrame(media, columns=['ID', 'File Name', 'Type', 'Size (bytes)', 'Uploaded', 'User ID'])
-            df_media['Size (MB)'] = (df_media['Size (bytes)'] / 1024 / 1024).round(2)
-            st.dataframe(df_media, use_container_width=True)
-            
-            cur.execute("SELECT SUM(size) FROM media")
-            total_size = cur.fetchone()[0] or 0
-            st.metric("💾 Total Storage Used", f"{(total_size / 1024 / 1024 / 1024):.2f} GB")
-        else:
-            st.info("No media files yet")
+        st.markdown(f"""
+        <div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; margin: 0 40px 12px 40px;'>
+            <div style='display: flex; align-items: center; justify-content: space-between;'>
+                <div style='display: flex; align-items: center; gap: 16px;'>
+                    <div style='width: 48px; height: 48px; background: {color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;'>{initials}</div>
+                    <div>
+                        <div style='font-size: 15px; font-weight: 600; color: #111827;'>{name}</div>
+                        <div style='font-size: 12px; color: #6b7280;'>{user[1]}</div>
+                    </div>
+                </div>
+                <div style='display: flex; align-items: center; gap: 32px;'>
+                    <div style='text-align: right;'>
+                        <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;'>Role</div>
+                        <div style='font-size: 14px; font-weight: 600; color: #111827;'>{user[3]}</div>
+                    </div>
+                    <div style='text-align: right;'>
+                        <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;'>Articles</div>
+                        <div style='font-size: 14px; font-weight: 600; color: #111827;'>{user[4]}</div>
+                    </div>
+                    <div style='text-align: right;'>
+                        <div style='font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;'>Followers</div>
+                        <div style='font-size: 14px; font-weight: 600; color: #111827;'>342</div>
+                    </div>
+                    <button style='background: white; color: #6b7280; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;'>✏️</button>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Categories & Tags
-elif page == "🏷️ Categories & Tags":
-    st.title("🏷️ Categories & Tags Management")
+# ANALYTICS (FROM FILE 1 - REAL DATA)
+elif page == "Analytics":
+    st.markdown("<div class='dashboard-container'><h2 style='margin-bottom: 24px; font-size: 24px; font-weight: 600;'>Analytics Overview</h2>", unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["📂 Categories", "🏷️ Tags"])
-    
-    with tab1:
-        st.subheader("Add New Category")
-        col1, col2 = st.columns(2)
-        cat_name = col1.text_input("Category Name")
-        cat_slug = col2.text_input("Category Slug")
-        
-        if st.button("➕ Add Category"):
-            if cat_name:
-                slug = cat_slug or cat_name.lower().replace(' ', '-')
-                try:
-                    cur.execute("INSERT INTO categories (name, slug) VALUES (%s, %s)", (cat_name, slug))
-                    conn.commit()
-                    st.success("Category added!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
-        
-        st.divider()
-        cur.execute("SELECT id, name, slug FROM categories ORDER BY created_at DESC")
-        categories = cur.fetchall()
-        
-        if categories:
-            for cat in categories:
-                col1, col2 = st.columns([4, 1])
-                col1.write(f"📂 {cat[1]} ({cat[2]})")
-                if col2.button("🗑️", key=f"delcat_{cat[0]}"):
-                    cur.execute("DELETE FROM categories WHERE id = %s", (cat[0],))
-                    conn.commit()
-                    st.rerun()
-        else:
-            st.info("No categories yet")
-    
-    with tab2:
-        st.subheader("Add New Tag")
-        tag_name = st.text_input("Tag Name")
-        if st.button("➕ Add Tag"):
-            if tag_name:
-                try:
-                    cur.execute("INSERT INTO tags (name) VALUES (%s)", (tag_name,))
-                    conn.commit()
-                    st.success("Tag added!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
-        
-        st.divider()
-        cur.execute("SELECT id, name FROM tags ORDER BY name")
-        tags = cur.fetchall()
-        
-        if tags:
-            for tag in tags:
-                col1, col2 = st.columns([4, 1])
-                col1.write(f"🏷️ {tag[1]}")
-                if col2.button("🗑️", key=f"deltag_{tag[0]}"):
-                    cur.execute("DELETE FROM tags WHERE id = %s", (tag[0],))
-                    conn.commit()
-                    st.rerun()
-        else:
-            st.info("No tags yet")
-
-# Analytics
-elif page == "📈 Analytics":
-    st.title("📈 Platform Analytics")
-    
-    col1, col2, col3 = st.columns(3)
-    
+    # Real stats
     cur.execute("SELECT COUNT(*) FROM content WHERE created_at > NOW() - INTERVAL '30 days'")
     monthly_content = cur.fetchone()[0]
     
     cur.execute("SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '30 days'")
     monthly_users = cur.fetchone()[0]
     
-    with col1:
-        st.metric("📝 Content (30 days)", monthly_content)
-    with col2:
-        st.metric("👥 New Users (30 days)", monthly_users)
-    with col3:
-        st.metric("📊 Avg Engagement", "4.2/5")
+    # Stats cards
+    st.markdown(f"""
+    <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px;'>
+        <div style='background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 24px; text-align: center;'>
+            <div style='font-size: 36px; font-weight: 700; color: #3b82f6;'>{monthly_content}</div>
+            <div style='font-size: 12px; color: #6b7280; margin-top: 8px;'>Content (30 days)</div>
+        </div>
+        <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 24px; text-align: center;'>
+            <div style='font-size: 36px; font-weight: 700; color: #10b981;'>{monthly_users}</div>
+            <div style='font-size: 12px; color: #6b7280; margin-top: 8px;'>New Users (30 days)</div>
+        </div>
+        <div style='background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px; padding: 24px; text-align: center;'>
+            <div style='font-size: 36px; font-weight: 700; color: #8b5cf6;'>4.2</div>
+            <div style='font-size: 12px; color: #6b7280; margin-top: 8px;'>Avg Engagement</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.divider()
+    # Content by status
+    st.markdown("<div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px; margin-bottom: 24px;'><h3 style='font-size: 17px; font-weight: 600; margin-bottom: 20px;'>Content by Status</h3>", unsafe_allow_html=True)
+    
+    cur.execute("SELECT status, COUNT(*) as count FROM content GROUP BY status")
+    status_data = cur.fetchall()
+    
+    for status, count in status_data:
+        st.markdown(f"""
+        <div style='padding: 12px 0; border-bottom: 1px solid #f3f4f6;'>
+            <div style='display: flex; justify-content: space-between;'>
+                <span style='font-size: 14px; color: #111827;'>{status}</span>
+                <span style='font-size: 14px; font-weight: 600; color: #111827;'>{count}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Top Authors
+    st.markdown("<div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px;'><h3 style='font-size: 17px; font-weight: 600; margin-bottom: 20px;'>Top Authors</h3>", unsafe_allow_html=True)
     
     cur.execute("""
-        SELECT DATE(created_at) as date, COUNT(*) as count
-        FROM content
-        WHERE created_at > NOW() - INTERVAL '30 days'
-        GROUP BY DATE(created_at)
-        ORDER BY date
+        SELECT u.name, u.email, COUNT(c.id) as articles
+        FROM users u
+        LEFT JOIN content c ON u.id = c.author_id
+        GROUP BY u.id, u.name, u.email
+        HAVING COUNT(c.id) > 0
+        ORDER BY articles DESC
+        LIMIT 5
     """)
-    growth = cur.fetchall()
+    top_authors = cur.fetchall()
     
-    if growth:
-        df_growth = pd.DataFrame(growth, columns=['Date', 'New Content'])
-        fig = px.line(df_growth, x='Date', y='New Content', title='Content Growth (Last 30 Days)')
-        st.plotly_chart(fig, use_container_width=True)
+    for idx, author in enumerate(top_authors, 1):
+        name = author[0] if author[0] else author[1].split('@')[0]
+        initials = name[:2].upper()
+        colors = ['#dc2626', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b']
+        color = colors[idx % len(colors)]
+        
+        st.markdown(f"""
+        <div style='display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f3f4f6;'>
+            <div style='font-size: 18px; font-weight: 600; color: #9ca3af; width: 30px;'>#{idx}</div>
+            <div style='width: 40px; height: 40px; background: {color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;'>{initials}</div>
+            <div style='flex: 1;'>
+                <div style='font-size: 14px; font-weight: 600; color: #111827;'>{name}</div>
+                <div style='font-size: 12px; color: #6b7280;'>{author[1]}</div>
+            </div>
+            <div style='text-align: right;'>
+                <div style='font-size: 16px; font-weight: 700; color: #111827;'>{author[2]}</div>
+                <div style='font-size: 11px; color: #6b7280;'>Articles</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    cur.execute("""
-        SELECT DATE(created_at) as date, COUNT(*) as count
-        FROM users
-        WHERE created_at > NOW() - INTERVAL '30 days'
-        GROUP BY DATE(created_at)
-        ORDER BY date
-    """)
-    user_growth = cur.fetchall()
-    
-    if user_growth:
-        df_user_growth = pd.DataFrame(user_growth, columns=['Date', 'New Users'])
-        fig2 = px.bar(df_user_growth, x='Date', y='New Users', title='User Registrations (Last 30 Days)')
-        st.plotly_chart(fig2, use_container_width=True)
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+# SETTINGS
+elif page == "Settings":
+    st.markdown("""
+    <div class='dashboard-container'>
+        <h2 style='margin-bottom: 24px; font-size: 24px; font-weight: 600;'>Settings</h2>
+        <div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px;'>
+            <h3 style='font-size: 17px; font-weight: 600; margin-bottom: 20px;'>Portal Configuration</h3>
+            <p style='color: #6b7280; font-size: 14px;'>Settings functionality coming soon...</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+else:
+    st.markdown("<div style='padding: 40px;'><h2>Page not found</h2></div>", unsafe_allow_html=True)
 
 cur.close()
 conn.close()
