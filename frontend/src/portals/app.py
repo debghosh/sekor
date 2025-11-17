@@ -598,33 +598,62 @@ elif page == "Users":
         </div>
         """, unsafe_allow_html=True)
 
-# ANALYTICS - COMPLETE WORKING VERSION
+# ANALYTICS - COMPLETE WITH REAL DATA
 elif page == "Analytics":
-    # Build category bars HTML
-    category_html = ""
-    categories = [
-        ("যাত্রা-আড্ডা", 5621, 100),
-        ("শিল্প", 4892, 87),
-        ("খাদ্য-আড্ডা", 3245, 58),
-        ("ইতিহাস", 2847, 51)
+    # Get real category data
+    cur.execute("""
+        SELECT 
+            COALESCE(c.name, 'Uncategorized') as category,
+            COUNT(co.id) as article_count
+        FROM categories c
+        LEFT JOIN content co ON co.category_id = c.id
+        WHERE co.status = 'PUBLISHED'
+        GROUP BY c.id, c.name
+        ORDER BY article_count DESC
+        LIMIT 4
+    """)
+    category_data = cur.fetchall()
+    
+    # Calculate percentages for categories
+    if category_data:
+        max_count = category_data[0][1] if category_data[0][1] > 0 else 1
+        categories = [(cat, count, int((count / max_count) * 100)) for cat, count in category_data]
+    else:
+        categories = []
+    
+    # Get real author data
+    cur.execute("""
+        SELECT 
+            COALESCE(u.name, u.email) as author_name,
+            SUBSTRING(COALESCE(u.name, u.email), 1, 2) as initials,
+            COUNT(c.id) as article_count
+        FROM users u
+        LEFT JOIN content c ON u.id = c.author_id
+        WHERE u.role IN ('AUTHOR', 'EDITOR')
+        GROUP BY u.id, u.name, u.email
+        HAVING COUNT(c.id) > 0
+        ORDER BY article_count DESC
+        LIMIT 5
+    """)
+    author_data = cur.fetchall()
+    
+    # Assign colors to authors
+    colors = ['#dc2626', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b']
+    authors = [
+        (row[0], row[1].upper(), colors[idx % len(colors)], row[2], 0, 0)
+        for idx, row in enumerate(author_data)
     ]
     
-    for cat, views, pct in categories:
-        category_html += f"<div style='margin-bottom: 18px;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'><span style='font-size: 14px; font-weight: 600; color: #111827;'>{cat}</span><span style='font-size: 13px; color: #6b7280;'>{views:,} views</span></div><div style='position: relative; width: 100%; height: 28px; background: #f3f4f6; border-radius: 14px; overflow: hidden;'><div style='position: absolute; width: {pct}%; height: 100%; background: linear-gradient(90deg, #dc2626, #8b5cf6);'></div><div style='position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: white;'>{pct}%</div></div></div>"
+    # Build category bars HTML
+    category_html = ""
+    for cat, count, pct in categories:
+        category_html += f"<div style='margin-bottom: 18px;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'><span style='font-size: 14px; font-weight: 600; color: #111827;'>{cat}</span><span style='font-size: 13px; color: #6b7280;'>{count} articles</span></div><div style='position: relative; width: 100%; height: 28px; background: #f3f4f6; border-radius: 14px; overflow: hidden;'><div style='position: absolute; width: {pct}%; height: 100%; background: linear-gradient(90deg, #dc2626, #8b5cf6);'></div><div style='position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: white;'>{pct}%</div></div></div>"
     
     # Build author rows HTML
     author_html = ""
-    authors = [
-        ("Anindita Chatterjee", "AC", "#dc2626", 23, 2847, 34),
-        ("Rajesh Kumar", "RK", "#8b5cf6", 45, 5621, 89),
-        ("Debashish Ghosh", "DG", "#3b82f6", 19, 4892, 127),
-        ("Soumya Sengupta", "SS", "#10b981", 34, 0, 0),
-        ("Rituparna Das", "RD", "#f59e0b", 41, 0, 0)
-    ]
-    
     for idx, (name, initials, color, articles, views, engagement) in enumerate(authors, 1):
         border = "border-bottom: 1px solid #f3f4f6;" if idx < len(authors) else ""
-        author_html += f"<div style='display: flex; align-items: center; gap: 16px; padding: 18px 0; {border}'><div style='font-size: 16px; font-weight: 600; color: #9ca3af; width: 32px;'>#{idx}</div><div style='width: 44px; height: 44px; background: {color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px;'>{initials}</div><div style='flex: 1;'><div style='font-size: 14px; font-weight: 600; color: #111827;'>{name}</div><div style='font-size: 12px; color: #6b7280;'>{articles} articles</div></div><div style='text-align: right; min-width: 100px;'><div style='font-size: 16px; font-weight: 700; color: #111827;'>{views:,}</div><div style='font-size: 10px; color: #9ca3af;'>TOTAL VIEWS</div></div><div style='text-align: right; min-width: 100px;'><div style='font-size: 16px; font-weight: 700; color: #111827;'>{engagement}</div><div style='font-size: 10px; color: #9ca3af;'>AVG ENGAGEMENT</div></div></div>"
+        author_html += f"<div style='display: flex; align-items: center; gap: 16px; padding: 18px 0; {border}'><div style='font-size: 16px; font-weight: 600; color: #9ca3af; width: 32px;'>#{idx}</div><div style='width: 44px; height: 44px; background: {color}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px;'>{initials}</div><div style='flex: 1;'><div style='font-size: 14px; font-weight: 600; color: #111827;'>{name}</div><div style='font-size: 12px; color: #6b7280;'>{articles} articles</div></div><div style='text-align: right; min-width: 100px;'><div style='font-size: 16px; font-weight: 700; color: #111827;'>{views}</div><div style='font-size: 10px; color: #9ca3af;'>TOTAL VIEWS</div></div><div style='text-align: right; min-width: 100px;'><div style='font-size: 16px; font-weight: 700; color: #111827;'>{engagement}</div><div style='font-size: 10px; color: #9ca3af;'>AVG ENGAGEMENT</div></div></div>"
     
     # Output everything in ONE call
     st.markdown(f"""
@@ -632,24 +661,24 @@ elif page == "Analytics":
         <h2 style='margin-bottom: 32px; font-size: 28px; font-weight: 600;'>Analytics Overview</h2>
         <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px;'>
             <div style='background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 28px; text-align: center;'>
-                <div style='font-size: 42px; font-weight: 700; color: #3b82f6;'>16,605</div>
+                <div style='font-size: 42px; font-weight: 700; color: #3b82f6;'>0</div>
                 <div style='font-size: 13px; color: #6b7280; margin-top: 8px;'>Total Views (30 days)</div>
             </div>
             <div style='background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 28px; text-align: center;'>
-                <div style='font-size: 42px; font-weight: 700; color: #10b981;'>77</div>
+                <div style='font-size: 42px; font-weight: 700; color: #10b981;'>0</div>
                 <div style='font-size: 13px; color: #6b7280; margin-top: 8px;'>Avg Engagement</div>
             </div>
             <div style='background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px; padding: 28px; text-align: center;'>
-                <div style='font-size: 42px; font-weight: 700; color: #8b5cf6;'>4151</div>
+                <div style='font-size: 42px; font-weight: 700; color: #8b5cf6;'>0</div>
                 <div style='font-size: 13px; color: #6b7280; margin-top: 8px;'>Avg Views per Article</div>
             </div>
         </div>
         <div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px; margin-bottom: 24px;'>
-            <h3 style='font-size: 24px; font-weight: 600; margin-bottom: 24px;color: #111827;'>Top Categories by Views</h3>
+            <div style='font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #111827;'>Top Categories by Views</div>
             {category_html}
         </div>
         <div style='background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px;'>
-            <h3 style='font-size: 24px; font-weight: 600; margin-bottom: 24px;color: #111827;'>Top Authors by Performance</h3>
+            <div style='font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #111827;'>Top Authors by Performance</div>
             {author_html}
         </div>
     </div>
